@@ -2,7 +2,7 @@ before_install:
     - sudo apt-get update
     - sudo apt-get install doxygen
     - sudo apt-get install yasm
-    - sudo apt-get install bison # yacc
+    - sudo apt-get install byacc # yacc
     - sudo apt-get install flex # lex
 language: c
 script: make
