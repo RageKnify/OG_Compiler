@@ -1,0 +1,48 @@
+# Executable
+og
+
+# weird files generated with make
+src/og_parser.output
+src/og_parser.tab.c
+src/og_parser.tab.h
+src/og_scanner.cpp
+
+# libs, binaries, examples
+libcdk/
+librts/
+build/
+examples/
+
+# CVS files
+src_cvs/
+
+############# C defaults #############
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
