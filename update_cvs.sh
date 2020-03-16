@@ -21,6 +21,14 @@ cvs_update() {
 set -e
 
 # ensure working dir is clean and repos up-to-date
+unstash() {
+	git stash pop >/dev/null
+}
+if git stash --include-untracked | grep -v "No local changes to save"; then
+	echo "Stashed changes. Will be unstashed on exit"
+	trap unstash EXIT
+fi
+
 echo Syncing git
 git pull --ff-only
 echo
@@ -48,6 +56,9 @@ if removed_files &>/dev/null; then
 	echo "remove them with:"
 	echo
 	removed_files | xargs -n1 echo rm
+	echo 'cd src_cvs'
+	removed_files | sed -E 's/src_cvs\///' | xargs -n1 echo cvs rm
+	echo 'cd ..'
 
 	exit 1
 fi
@@ -57,7 +68,9 @@ if cvs_update |& grep -w '?' &>/dev/null; then
 	echo "You have new files to add to CVS first:"
 	echo "if you don't, put them in .cvsignore"
 	echo
-	cvs_update |& grep -w '?' | cut -d' ' -f2 | xargs -n1 echo cvs add
+	echo 'cd src_cvs'
+	cvs_update |& grep -w '?' | cut -d' ' -f2 | sed -E 's/src_cvs\///' | xargs -n1 echo cvs add
+	echo 'cd ..'
 	exit 1
 fi
 

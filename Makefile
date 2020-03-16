@@ -1,32 +1,36 @@
 ROOT = $(abspath $(CURDIR))/build
-MAKEOPTS =
 MAKEOPTS += ROOT=$(ROOT)
 
 LANGUAGE = og
 
-.PHONY: all clean build-src examples test build-rts build-cdk
-all: $(LANGUAGE)
+.PHONY:
 
-$(LANGUAGE): build-src
-	cp src/$(LANGUAGE) .
-build-src: build-cdk build-rts
-	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
-	$(MAKE) -C src $(MAKEOPTS) all
+all: $(LANGUAGE) .PHONY
 
-examples: build-src
+$(LANGUAGE): src/$(LANGUAGE) .PHONY
+	ln -sf src/$(LANGUAGE) .
+
+src/$(LANGUAGE): build-cdk build-rts .PHONY
+	#$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
+	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h all
+
+examples: $(LANGUAGE) .PHONY
 	$(MAKE) -C examples $(MAKEOPTS) all
 
-test: examples
+test: examples .PHONY
+	$(MAKE) -C tests $(MAKEOPTS) test
 
-clean:
+clean: .PHONY
+	rm -rf build
 	# rm -rf librts libcdk # commented out in case you want to do things offline
 	$(MAKE) -C librts $(MAKEOPTS) clean
 	$(MAKE) -C libcdk $(MAKEOPTS) clean
 	$(MAKE) -C src $(MAKEOPTS) clean
 	$(MAKE) -C examples $(MAKEOPTS) clean
+	$(MAKE) -C tests $(MAKEOPTS) clean
 	rm -f $(LANGUAGE)
 
-build-rts: librts
+build-rts: librts .PHONY
 	$(MAKE) -C librts $(MAKEOPTS) all
 	$(MAKE) -C librts $(MAKEOPTS) install
 librts:
@@ -35,7 +39,7 @@ librts:
 	rm librts.tar.bz2
 	mv librts5-202002022020 librts
 
-build-cdk: libcdk
+build-cdk: libcdk .PHONY
 	$(MAKE) -C libcdk $(MAKEOPTS) all
 	$(MAKE) -C libcdk $(MAKEOPTS) install
 libcdk:
