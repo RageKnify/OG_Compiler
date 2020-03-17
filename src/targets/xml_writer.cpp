@@ -200,3 +200,8 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
   closeTag("else", lvl + 2);
   closeTag(node, lvl);
 }
+
+//---------------------------------------------------------------------------
+
+void og::xml_writer::do_continue_node(og::continue_node * const node, int lvl) {
+}
