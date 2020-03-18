@@ -193,3 +193,6 @@ void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
 
 void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
 }
+
+void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+}

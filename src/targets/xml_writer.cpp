@@ -203,3 +203,6 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
 
 void og::xml_writer::do_block_node(og::block_node *const node, int lvl) {
 }
+
+void og::xml_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+}
