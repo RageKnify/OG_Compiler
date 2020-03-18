@@ -203,5 +203,16 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+void og::xml_writer::do_block_node(og::block_node *const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::xml_writer::do_break_node(og::break_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
 void og::xml_writer::do_address_of_node(og::address_of_node* const node, int lvl) {
 }
+
