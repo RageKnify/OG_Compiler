@@ -1,5 +1,5 @@
-#ifndef __OG_VARIABLE_DECLARATION_NODE_H__
-#define __OG_VARIABLE_DECLARATION_NODE_H__
+#ifndef __OG_AST_VARIABLE_DECLARATION_NODE_H__
+#define __OG_AST_VARIABLE_DECLARATION_NODE_H__
 
 #include <string>
 #include <cdk/ast/basic_node.h>
