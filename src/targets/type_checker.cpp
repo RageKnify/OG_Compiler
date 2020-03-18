@@ -206,3 +206,8 @@ void og::type_checker::do_break_node(og::break_node *const node, int lvl) {
 void og::type_checker::do_address_of_node(og::address_of_node* const node, int lvl) {
 }
 
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+}
+
