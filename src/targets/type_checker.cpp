@@ -177,8 +177,10 @@ void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::do_while_node(og::while_node *const node, int lvl) {
+void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
+#if 0
   node->condition()->accept(this, lvl + 4);
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -204,6 +206,11 @@ void og::type_checker::do_break_node(og::break_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_address_of_node(og::address_of_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 }
 
 //---------------------------------------------------------------------------
