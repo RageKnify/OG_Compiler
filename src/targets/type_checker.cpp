@@ -177,8 +177,10 @@ void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::do_while_node(og::while_node *const node, int lvl) {
+void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
+#if 0
   node->condition()->accept(this, lvl + 4);
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -189,4 +191,49 @@ void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+}
+
+void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+}
+
+void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
+}
+
+void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_break_node(og::break_node *const node, int lvl) {
+}
+
+void og::type_checker::do_continue_node(og::continue_node * const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_address_of_node(og::address_of_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_pointer_index_node(og::pointer_index_node* const node, int lvl) {
+}
+
+void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
 }
