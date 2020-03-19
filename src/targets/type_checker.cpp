@@ -177,8 +177,10 @@ void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::do_while_node(og::while_node *const node, int lvl) {
+void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
+#if 0
   node->condition()->accept(this, lvl + 4);
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -189,6 +191,34 @@ void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_break_node(og::break_node *const node, int lvl) {
+}
+
+void og::type_checker::do_continue_node(og::continue_node * const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_address_of_node(og::address_of_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
 }
 
 //---------------------------------------------------------------------------
