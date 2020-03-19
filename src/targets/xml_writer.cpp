@@ -238,3 +238,8 @@ void og::xml_writer::do_pointer_index_node(og::pointer_index_node* const node, i
 
 void og::xml_writer::do_tuple_index_node(og::tuple_index_node * const node, int lvl) {
 }
+
+//---------------------------------------------------------------------------
+
+void og::xml_writer::do_tuple_node(og::tuple_node* const node, int lvl) {
+}
