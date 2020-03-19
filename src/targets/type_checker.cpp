@@ -213,3 +213,8 @@ void og::type_checker::do_address_of_node(og::address_of_node* const node, int l
 void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 }
 
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+}
+
