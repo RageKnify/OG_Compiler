@@ -154,7 +154,7 @@ void og::xml_writer::do_print_node(og::print_node * const node, int lvl) {
 void og::xml_writer::do_read_node(og::read_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->argument()->accept(this, lvl + 2);
+  // node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -203,9 +203,23 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
   closeTag(node, lvl);
 }
 
+void og::xml_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+}
+
+void og::xml_writer::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
+}
+
+void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+}
+
+void og::xml_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+}
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_block_node(og::block_node *const node, int lvl) {
+}
+
+void og::xml_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
 }
 
 //---------------------------------------------------------------------------

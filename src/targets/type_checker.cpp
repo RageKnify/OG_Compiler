@@ -169,7 +169,7 @@ void og::type_checker::do_print_node(og::print_node *const node, int lvl) {
 
 void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
   try {
-    node->argument()->accept(this, lvl);
+    // node->argument()->accept(this, lvl);
   } catch (const std::string &id) {
     throw "undeclared variable '" + id + "'";
   }
@@ -193,9 +193,24 @@ void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
 }
 
+void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+}
+
+void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
+}
+
+void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+}
+
+void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
+}
+
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
+}
+
+void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
 }
 
 //---------------------------------------------------------------------------
