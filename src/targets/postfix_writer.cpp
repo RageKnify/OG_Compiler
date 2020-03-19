@@ -282,6 +282,9 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
 }
 
+void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+}
+
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_break_node(og::break_node* const node, int lvl) {
