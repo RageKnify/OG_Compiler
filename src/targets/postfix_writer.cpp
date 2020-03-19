@@ -235,7 +235,8 @@ void og::postfix_writer::do_read_node(og::read_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void og::postfix_writer::do_while_node(og::while_node * const node, int lvl) {
+void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
+#if 0
   ASSERT_SAFE_EXPRESSIONS;
   int lbl1, lbl2;
   _pf.LABEL(mklbl(lbl1 = ++_lbl));
@@ -244,6 +245,7 @@ void og::postfix_writer::do_while_node(og::while_node * const node, int lvl) {
   node->block()->accept(this, lvl + 2);
   _pf.JMP(mklbl(lbl1));
   _pf.LABEL(mklbl(lbl2));
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -271,8 +273,42 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
   _pf.LABEL(mklbl(lbl1 = lbl2));
 }
 
+void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+}
+
 void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
 }
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_break_node(og::break_node* const node, int lvl) {
+}
+
+void og::postfix_writer::do_continue_node(og::continue_node * const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_address_of_node(og::address_of_node * const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_pointer_index_node(og::pointer_index_node* const node, int lvl) {
+}
+
+void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
 }
