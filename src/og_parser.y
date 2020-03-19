@@ -42,8 +42,8 @@
 %}
 %%
 
-program	: tBEGIN list tEND { compiler->ast(new og::program_node(LINE, $2)); }
-	      ;
+/* program	: tBEGIN list tEND { compiler->ast(new og::program_node(LINE, $2)); } */
+/* 	      ; */
 
 list : stmt	     { $$ = new cdk::sequence_node(LINE, $1); }
 	   | list stmt { $$ = new cdk::sequence_node(LINE, $2, $1); }
