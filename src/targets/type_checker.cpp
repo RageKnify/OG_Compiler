@@ -169,7 +169,7 @@ void og::type_checker::do_print_node(og::print_node *const node, int lvl) {
 
 void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
   try {
-    node->argument()->accept(this, lvl);
+    // node->argument()->accept(this, lvl);
   } catch (const std::string &id) {
     throw "undeclared variable '" + id + "'";
   }
