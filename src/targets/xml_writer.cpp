@@ -203,6 +203,9 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
   closeTag(node, lvl);
 }
 
+void og::xml_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+}
+
 void og::xml_writer::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
 }
 

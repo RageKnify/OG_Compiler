@@ -273,6 +273,9 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
   _pf.LABEL(mklbl(lbl1 = lbl2));
 }
 
+void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+}
+
 void og::postfix_writer::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
 }
 
