@@ -303,5 +303,8 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
 
 //---------------------------------------------------------------------------
 
+void og::postfix_writer::do_pointer_index_node(og::pointer_index_node* const node, int lvl) {
+}
+
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
 }
