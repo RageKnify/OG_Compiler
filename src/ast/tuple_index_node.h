@@ -3,21 +3,21 @@
 
 #include <cdk/ast/integer_node.h>
 #include <cdk/ast/lvalue_node.h>
-#include <cdk/ast/variable_node.h>
+#include "tuple_node.h"
 
 namespace og {
 
 	class tuple_index_node: public cdk::lvalue_node {
-		cdk::variable_node* _tuple;
+		og::tuple_node* _tuple;
 		cdk::integer_node* _index;
 
 	public:
-		inline tuple_index_node(int lineno, cdk::variable_node* tuple, cdk::integer_node* index) :
+		inline tuple_index_node(int lineno, og::tuple_node* tuple, cdk::integer_node* index) :
 			cdk::lvalue_node(lineno), _tuple(tuple), _index(index) {
 		}
 
 	public:
-		inline cdk::variable_node* tuple() {
+		inline og::tuple_node* tuple() {
 			return _tuple;
 		}
 
