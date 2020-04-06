@@ -2,7 +2,7 @@
 #define __OG_AST_FUNCTION_DEFINITION_NODE_H__
 
 #include <string>
-#include <cdk/ast/expression_node.h>
+#include <cdk/ast/basic_node.h>
 #include <cdk/ast/sequence_node.h>
 #include <cdk/types/basic_type.h>
 #include "ast/block_node.h"
@@ -12,7 +12,7 @@ namespace og {
   /**
    * Class for describing function definitions nodes.
    */
-  class function_definition_node: public cdk::expression_node {
+  class function_definition_node: public cdk::basic_node {
     int _qualifier;
     cdk::basic_type *_type;
     std::string _identifier;
@@ -21,11 +21,11 @@ namespace og {
 
   public:
     inline function_definition_node(int lineno, int qualifier, cdk::basic_type *type, std::string &identifier, og::block_node *block) :
-      cdk::expression_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _arguments(new cdk::sequence_node(lineno)), _block(block) {
+      cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _arguments(new cdk::sequence_node(lineno)), _block(block) {
     }
 
     inline function_definition_node(int lineno, int qualifier, cdk::basic_type *type, std::string &identifier, cdk::sequence_node *arguments, og::block_node *block) :
-      cdk::expression_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _arguments(arguments), _block(block) {
+      cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _arguments(arguments), _block(block) {
     }
 
   public:
