@@ -227,6 +227,9 @@ void og::xml_writer::do_continue_node(og::continue_node * const node, int lvl) {
 void og::xml_writer::do_address_of_node(og::address_of_node* const node, int lvl) {
 }
 
+void og::xml_writer::do_nullptr_node(og::nullptr_node* const node, int lvl) {
+}
+
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_return_node(og::return_node* const node, int lvl) {
