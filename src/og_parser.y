@@ -12,6 +12,7 @@
 
 %union {
   int                   i;	/* integer value */
+  double                d;
   std::string          *s;	/* symbol name or string literal */
   cdk::basic_node      *node;	/* node pointer */
   cdk::sequence_node   *sequence;
@@ -20,6 +21,7 @@
 };
 
 %token <i> tINTEGER
+%token <d> tREAL
 %token <s> tIDENTIFIER tSTRING
 %token tAUTO tINT_TYPE tREAL_TYPE tSTRING_TYPE tPTR
 %token tFOR tDO tBREAK tCONTINUE

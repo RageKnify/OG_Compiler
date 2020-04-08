@@ -11,6 +11,8 @@
 // don't change this
 #define yyerror LexerError
 %}
+EXP [eE]-?[0-9]+
+
 %x X_STRING
 %%
 
@@ -58,6 +60,10 @@
 <X_STRING>\n           yyerror("newline in string");
 
 [0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
+
+[0-9]*\.[0-9]+{EXP}?   |
+[0-9]{EXP}             |
+[0-9]\.{EXP}?          yylval.d = std::stod(yytext); return tREAL;
 
 [-()<>=+*/%;{}.@?[\]]  return *yytext;
 
