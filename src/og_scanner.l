@@ -13,7 +13,7 @@
 %}
 EXP [eE]-?[0-9]+
 
-%x X_STRING
+%x X_STRING X_STRING_IGNORE
 %%
 
 "--".*                 ; /* ignore comments */
@@ -59,6 +59,19 @@ EXP [eE]-?[0-9]+
 <X_STRING>\\\\         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
+\\([a-fA-F0-9]{2})     |
+\\[a-fA-F0-9]          {
+                           char c = std::stoi(yytext+1, NULL, 16);
+                           if (c == 0) {
+                               yy_push_state(X_STRING_IGNORE);
+                           } else {
+                               *yylval.s += c;
+                           }
+                       }
+
+<X_STRING_IGNORE>\"           yy_pop_state(); yyless(0);
+<X_STRING_IGNORE>.|\\\"       ;
+<X_STRING_IGNORE>\n           yyerror("newline in string");
 
 [0-9]+                 {
     try {
