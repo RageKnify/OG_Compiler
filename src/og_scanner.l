@@ -57,7 +57,23 @@
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
 
-[0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
+[0-9]+                 {
+    try {
+        yylval.i = std::stoi(yytext, nullptr, 10);
+        return tINTEGER;
+    } catch(const std::out_of_range&) {
+        yyerror("integer overflow");
+    }
+}
+
+0x[0-9a-fA-F]+         {
+    try {
+        yylval.i = std::stoi(yytext, nullptr, 16);
+        return tINTEGER;
+    } catch(const std::out_of_range&) {
+        yyerror("integer overflow");
+    }
+}
 
 [-()<>=+*/%;{}.@?[\]]  return *yytext;
 
