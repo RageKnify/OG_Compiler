@@ -24,7 +24,7 @@
 "auto"                 return tAUTO;
 "int"                  return tINT_TYPE;
 "real"                 return tREAL_TYPE;
-"string"               return tSTRING_TYPE
+"string"               return tSTRING_TYPE;
 "ptr"                  return tPTR;
 
 "for"                  return tFOR;
