@@ -11,6 +11,8 @@
 // don't change this
 #define yyerror LexerError
 %}
+EXP [eE]-?[0-9]+
+
 %x X_STRING
 %%
 
@@ -74,6 +76,10 @@
         yyerror("integer overflow");
     }
 }
+
+[0-9]*\.[0-9]+{EXP}?   |
+[0-9]{EXP}             |
+[0-9]\.{EXP}?          yylval.d = std::stod(yytext); return tREAL;
 
 [-()<>=+*/%;{}.@?[\]]  return *yytext;
 
