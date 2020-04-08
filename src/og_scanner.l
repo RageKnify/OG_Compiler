@@ -21,11 +21,33 @@
 "=="                   return tEQ;
 "!="                   return tNE;
 
+"auto"                 return tAUTO;
+"int"                  return tINT_TYPE;
+"real"                 return tREAL_TYPE;
+"string"               return tSTRING_TYPE
+"ptr"                  return tPTR;
+
 "for"                  return tFOR;
+"do"                   return tDO;
+"break"                return tBREAK;
+"continue"             return tCONTINUE;
+
+"public"               return tPUBLIC;
+"require"              return tREQUIRE;
+"procedure"            return tPROCEDURE;
+"return"               return tRETURN;
+
+"sizeof"               return tSIZEOF;
+"nullptr"              return tNULLPTR;
+
+"input"                return tREAD;
+"write"                return tPRINT;
+"writeln"              return tPRINTLN;
+
 "if"                   return tIF;
+"then"                 return tTHEN;
+"elif"                 return tELIF;
 "else"                 return tELSE;
-"print"                return tPRINT;
-"read"                 return tREAD;
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
