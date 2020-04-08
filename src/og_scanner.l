@@ -68,6 +68,7 @@ EXP [eE]-?[0-9]+
                                          *yylval.s += c;
                                      }
                                  }
+<X_STRING>\\.          *yylval.s += yytext + 1;
 
 <X_STRING_IGNORE>\"           yy_pop_state(); yyless(0);
 <X_STRING_IGNORE>.|\\\"       ;
