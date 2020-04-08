@@ -63,7 +63,7 @@ EXP [eE]-?[0-9]+
 
 [0-9]*\.[0-9]+{EXP}?   |
 [0-9]{EXP}             |
-[0-9]\.{EXP}?          yylval.d = std::stod(yytext);
+[0-9]\.{EXP}?          yylval.d = std::stod(yytext); return tREAL;
 
 [-()<>=+*/%;{}.@?[\]]  return *yytext;
 

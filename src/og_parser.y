@@ -21,6 +21,7 @@
 };
 
 %token <i> tINTEGER
+%token <d> tREAL
 %token <s> tIDENTIFIER tSTRING
 %token tAUTO tINT_TYPE tREAL_TYPE tSTRING_TYPE tPTR
 %token tFOR tDO tBREAK tCONTINUE
