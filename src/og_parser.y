@@ -18,6 +18,7 @@
   cdk::sequence_node    *sequence;
   cdk::expression_node  *expression; /* expression nodes */
   cdk::lvalue_node      *lvalue;
+  cdk::basic_type       *type;
 };
 
 %token <i> tINTEGER
@@ -48,6 +49,7 @@
 %type <sequence> list exprs
 %type <expression> expr
 %type <lvalue> lval
+%type <type> type
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
@@ -62,11 +64,16 @@ exprs : expr           { $$ = new cdk::sequence_node(LINE, $1); }
       | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
-type : tINT_TYPE
-     | tREAL_TYPE
-     | tSTRING_TYPE
-     | tPTR '<' type '>'
-     | tPTR '<' tAUTO '>'
+type : tINT_TYPE           { $$ = new cdk::primitive_type(4, cdk::TYPE_INT); }
+                                    // { $$ = cdk::make_primitive_type(4, cdk::TYPE_INT); }
+     | tREAL_TYPE          { $$ = new cdk::primitive_type(8, cdk::TYPE_DOUBLE); }
+                                    // { $$ = cdk::make_primitive_type(8, cdk::TYPE_DOUBLE); }
+     | tSTRING_TYPE        { $$ = new cdk::primitive_type(4, cdk::TYPE_STRING); }
+                                    // { $$ = cdk::make_primitive_type(4, cdk::TYPE_STRING); }
+     | tPTR '<' type '>'   { $$ = new cdk::reference_type(4, std::shared_ptr<cdk::basic_type>($3)); }
+                                    // { $$ = cdk::make_reference_type(4, $3); }
+     | tPTR '<' tAUTO '>'  { $$ = new cdk::reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
+                                    // { $$ = cdk::make_reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
      ;
 
 stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1); }
