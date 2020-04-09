@@ -62,6 +62,13 @@ exprs : expr           { $$ = new cdk::sequence_node(LINE, $1); }
       | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
+type : tINT_TYPE
+     | tREAL_TYPE
+     | tSTRING_TYPE
+     | tPTR '<' type '>'
+     | tPTR '<' tAUTO '>'
+     ;
+
 stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1); }
      | tPRINT expr ';'                  { $$ = new og::print_node(LINE, $2); }
      | tREAD ';'                        { $$ = new og::read_node(LINE); }
