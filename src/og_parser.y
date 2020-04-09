@@ -19,6 +19,7 @@
   cdk::expression_node  *expression; /* expression nodes */
   cdk::lvalue_node      *lvalue;
   cdk::basic_type       *type;
+  std::vector<std::string*>  *identifiers;
 };
 
 %token <i> tINTEGER
@@ -50,6 +51,7 @@
 %type <expression> expr
 %type <lvalue> lval
 %type <type> type
+%type <identifiers> identifiers
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
@@ -75,6 +77,10 @@ type : tINT_TYPE           { $$ = new cdk::primitive_type(4, cdk::TYPE_INT); }
      | tPTR '<' tAUTO '>'  { $$ = new cdk::reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
                                     // { $$ = cdk::make_reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
      ;
+
+identifiers : identifiers ',' tIDENTIFIER { $1->push_back($3); $$ = $1; }
+            | tIDENTIFIER                 { $$ = new std::vector<std::string*>({$1}); }
+            ;
 
 stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1); }
      | tPRINT expr ';'                  { $$ = new og::print_node(LINE, $2); }
