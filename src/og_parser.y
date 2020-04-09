@@ -28,15 +28,21 @@
 %token tPUBLIC tREQUIRE tPROCEDURE tRETURN tSIZEOF tNULLPTR
 %token tREAD tPRINT tPRINTLN
 %token tIF tTHEN tELIF tELSE
+%token tOR tAND
 
 %nonassoc tIFX
 %nonassoc tELSE
 
 %right '='
-%left tGE tLE tEQ tNE '>' '<'
+%left tOR
+%left tAND
+%nonassoc '~'
+%left tEQ tNE
+%left tGE tLE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc tUNARY
+// %nonassoc tPRIMARY
 
 %type <node> stmt
 %type <sequence> list exprs
@@ -68,6 +74,9 @@ stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1)
 expr : tINTEGER                 { $$ = new cdk::integer_node(LINE, $1); }
      | tSTRING                  { $$ = new cdk::string_node(LINE, $1); }
      | '-' expr %prec tUNARY    { $$ = new cdk::neg_node(LINE, $2); }
+     | '+' expr %prec tUNARY    { $$ = new og::identity_node(LINE, $2); }
+     | lval '?' %prec tUNARY    { $$ = new og::address_of_node(LINE, $1); }
+     | '~' expr                 { $$ = new cdk::not_node(LINE, $2); }
      | expr '+' expr            { $$ = new cdk::add_node(LINE, $1, $3); }
      | expr '-' expr            { $$ = new cdk::sub_node(LINE, $1, $3); }
      | expr '*' expr            { $$ = new cdk::mul_node(LINE, $1, $3); }
