@@ -23,6 +23,9 @@ EXP [eE]-?[0-9]+
 "=="                   return tEQ;
 "!="                   return tNE;
 
+"||"                   return tOR;
+"&&"                   return tAND;
+
 "auto"                 return tAUTO;
 "int"                  return tINT_TYPE;
 "real"                 return tREAL_TYPE;
