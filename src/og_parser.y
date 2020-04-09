@@ -11,14 +11,14 @@
 %}
 
 %union {
-  int                   i;	/* integer value */
-  double                d;
-  std::string           *s;	/* symbol name or string literal */
-  cdk::basic_node       *node;	/* node pointer */
-  cdk::sequence_node    *sequence;
-  cdk::expression_node  *expression; /* expression nodes */
-  cdk::lvalue_node      *lvalue;
-  cdk::basic_type       *type;
+  int                        i;	/* integer value */
+  double                     d;
+  std::string                *s;	/* symbol name or string literal */
+  cdk::basic_node            *node;	/* node pointer */
+  cdk::sequence_node         *sequence;
+  cdk::expression_node       *expression; /* expression nodes */
+  cdk::lvalue_node           *lvalue;
+  cdk::basic_type            *type;
   std::vector<std::string*>  *identifiers;
 };
 
@@ -27,7 +27,7 @@
 %token <s> tIDENTIFIER tSTRING
 %token tAUTO tINT_TYPE tREAL_TYPE tSTRING_TYPE tPTR
 %token tFOR tDO tBREAK tCONTINUE
-%token tPUBLIC tREQUIRE tPROCEDURE tRETURN tSIZEOF tNULLPTR
+%token tPUBLIC tPRIVATE tREQUIRE tPROCEDURE tRETURN tSIZEOF tNULLPTR
 %token tREAD tPRINT tPRINTLN
 %token tIF tTHEN tELIF tELSE
 %token tOR tAND
@@ -46,7 +46,7 @@
 %nonassoc tUNARY
 // %nonassoc tPRIMARY
 
-%type <node> stmt
+%type <node> stmt vardec
 %type <sequence> list exprs
 %type <expression> expr
 %type <lvalue> lval
@@ -61,6 +61,16 @@
 list : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
      | list stmt    { $$ = new cdk::sequence_node(LINE, $2, $1); }
      ;
+
+vardec :          type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
+       |          type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
+       | tPUBLIC  type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), NULL); }
+       | tPUBLIC  type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), $5); }
+       | tREQUIRE type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), NULL); }
+       | tREQUIRE type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), $5); }
+       |          tAUTO identifiers '=' exprs  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, NULL, $2, new og::tuple_node(LINE, $4)); }
+       | tPUBLIC  tAUTO identifiers '=' exprs  { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  NULL, $3, new og::tuple_node(LINE, $5)); }
+       ;
 
 exprs : expr           { $$ = new cdk::sequence_node(LINE, $1); }
       | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
