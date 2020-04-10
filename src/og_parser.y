@@ -48,9 +48,9 @@
 // %nonassoc tPRIMARY
 
 %type <s> string
-%type <node> stmt vardec funcdec
+%type <node> stmt vardec funcdec argdec localdec
 %type <block_node> block
-%type <sequence> stmts exprs vardecs decs
+%type <sequence> stmts exprs argdecs decs
 %type <expression> expr
 %type <lvalue> lval
 %type <type> type
@@ -74,41 +74,44 @@ vardec :          type  tIDENTIFIER            { $$ = new og::variable_declarati
 funcdec :          type       tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, $2); }
         |          tPROCEDURE tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_VOID), $2); }
         |          tAUTO      tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, NULL, $2); }
-        |          type       tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, $2, $4); }
-        |          tPROCEDURE tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_VOID), $2, $4); }
-        |          tAUTO      tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, NULL, $2, $4); }
+        |          type       tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, $2, $4); }
+        |          tPROCEDURE tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_VOID), $2, $4); }
+        |          tAUTO      tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tPRIVATE, NULL, $2, $4); }
         | tPUBLIC  type       tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, $3); }
         | tPUBLIC  tPROCEDURE tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_VOID), $3); }
         | tPUBLIC  tAUTO      tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, NULL, $3); }
-        | tPUBLIC  type       tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, $3, $5); }
-        | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_VOID), $3, $5); }
-        | tPUBLIC  tAUTO      tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, NULL, $3, $5); }
+        | tPUBLIC  type       tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, $3, $5); }
+        | tPUBLIC  tPROCEDURE tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_VOID), $3, $5); }
+        | tPUBLIC  tAUTO      tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tPUBLIC, NULL, $3, $5); }
         | tREQUIRE type       tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, $3); }
         | tREQUIRE tPROCEDURE tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, new cdk::primitive_type(0, cdk::TYPE_VOID), $3); }
         | tREQUIRE tAUTO      tIDENTIFIER '(' ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, NULL, $3); }
-        | tREQUIRE type       tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, $3, $5); }
-        | tREQUIRE tPROCEDURE tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, new cdk::primitive_type(0, cdk::TYPE_VOID), $3, $5); }
-        | tREQUIRE tAUTO      tIDENTIFIER '(' vardecs ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, NULL, $3, $5); }
+        | tREQUIRE type       tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, $3, $5); }
+        | tREQUIRE tPROCEDURE tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, new cdk::primitive_type(0, cdk::TYPE_VOID), $3, $5); }
+        | tREQUIRE tAUTO      tIDENTIFIER '(' argdecs ')' { $$ = new og::function_declaration_node(LINE, tREQUIRE, NULL, $3, $5); }
         |          type       tIDENTIFIER '(' ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, $2, $5); }
         |          tPROCEDURE tIDENTIFIER '(' ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_VOID), $2, $5); }
         |          tAUTO      tIDENTIFIER '(' ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, NULL, $2, $5); }
-        |          type       tIDENTIFIER '(' vardecs ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, $2, $4, $6); }
-        |          tPROCEDURE tIDENTIFIER '(' vardecs ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_VOID), $2, $4, $6); }
-        |          tAUTO      tIDENTIFIER '(' vardecs ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, NULL, $2, $4, $6); }
+        |          type       tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, $2, $4, $6); }
+        |          tPROCEDURE tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_VOID), $2, $4, $6); }
+        |          tAUTO      tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPRIVATE, NULL, $2, $4, $6); }
         | tPUBLIC  type       tIDENTIFIER '(' ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, $3, $6); }
         | tPUBLIC  tPROCEDURE tIDENTIFIER '(' ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_VOID), $3, $6); }
         | tPUBLIC  tAUTO      tIDENTIFIER '(' ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, NULL, $3, $6); }
-        | tPUBLIC  type       tIDENTIFIER '(' vardecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, $3, $5, $7); }
-        | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vardecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_VOID), $3, $5, $7); }
-        | tPUBLIC  tAUTO      tIDENTIFIER '(' vardecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, NULL, $3, $5, $7); }
+        | tPUBLIC  type       tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, $3, $5, $7); }
+        | tPUBLIC  tPROCEDURE tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_VOID), $3, $5, $7); }
+        | tPUBLIC  tAUTO      tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, NULL, $3, $5, $7); }
         ;
 
 exprs : expr           { $$ = new cdk::sequence_node(LINE, $1); }
       | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
-vardecs : vardec                { $$ = new cdk::sequence_node(LINE, $1); }
-        | vardecs ',' vardec    { $$ = new cdk::sequence_node(LINE, $3, $1); }
+argdec : type  tIDENTIFIER      { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
+       ;
+
+argdecs : argdec                { $$ = new cdk::sequence_node(LINE, $1); }
+        | argdecs ',' argdec    { $$ = new cdk::sequence_node(LINE, $3, $1); }
         ;
 
 type : tINT_TYPE           { $$ = new cdk::primitive_type(4, cdk::TYPE_INT); }
@@ -132,11 +135,14 @@ block : '{' decs stmts '}'     { $$ = new og::block_node(LINE, $2, $3); }
       | '{' stmts '}'          { $$ = new og::block_node(LINE, NULL, $2); }
       ;
 
-decs : vardec        { $$ = new cdk::sequence_node(LINE, $1); }
-     | funcdec       { $$ = new cdk::sequence_node(LINE, $1); }
-     | decs vardec   { $$ = new cdk::sequence_node(LINE, $2, $1); }
-     | decs funcdec   { $$ = new cdk::sequence_node(LINE, $2, $1); }
+decs : localdec        { $$ = new cdk::sequence_node(LINE, $1); }
+     | decs localdec   { $$ = new cdk::sequence_node(LINE, $2, $1); }
      ;
+
+localdec : type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
+         | type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
+         | tAUTO identifiers '=' exprs  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, NULL, $2, new og::tuple_node(LINE, $4)); }
+         ;
 
 stmts : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
       | stmts stmt   { $$ = new cdk::sequence_node(LINE, $2, $1); }
