@@ -158,7 +158,9 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
 }
 
 void og::type_checker::do_print_node(og::print_node *const node, int lvl) {
+#if 0
   node->argument()->accept(this, lvl + 2);
+#endif
 }
 
 //---------------------------------------------------------------------------

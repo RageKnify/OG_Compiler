@@ -135,10 +135,12 @@ void og::xml_writer::do_evaluation_node(og::evaluation_node * const node, int lv
 }
 
 void og::xml_writer::do_print_node(og::print_node * const node, int lvl) {
+#if 0
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
+#endif
 }
 
 //---------------------------------------------------------------------------
