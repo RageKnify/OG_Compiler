@@ -149,8 +149,9 @@ stmts : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
       ;
 
 stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1); }
-     | tPRINT expr ';'                  { $$ = new og::print_node(LINE, $2); }
-     | tREAD ';'                        { $$ = new og::read_node(LINE); }
+     | tPRINT exprs ';'                  { $$ = new og::print_node(LINE, $2); }
+     | tPRINTLN exprs ';'                  { $$ = new og::print_node(LINE, $2, true); }
+     | tFOR decs ';' exprs ';' exprs tDO stmt { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
      | tFOR exprs ';' exprs ';' exprs tDO stmt { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
      | tIF '(' expr ')' stmt %prec tIFX { $$ = new og::if_node(LINE, $3, $5); }
      | tIF '(' expr ')' stmt tELSE stmt { $$ = new og::if_else_node(LINE, $3, $5, $7); }
@@ -177,6 +178,7 @@ expr : tINTEGER                 { $$ = new cdk::integer_node(LINE, $1); }
      | expr tAND expr           { $$ = new cdk::and_node(LINE, $1, $3); }
      | '[' expr ']'             { $$ = new og::memory_reservation_node(LINE, $2); }
      | '(' expr ')'             { $$ = $2; }
+     | tREAD                    { $$ = new og::read_node(LINE); }
      | lval                     { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr            { $$ = new cdk::assignment_node(LINE, $1, $3); }
      ;

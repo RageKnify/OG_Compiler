@@ -178,6 +178,7 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
 }
 
 void og::postfix_writer::do_print_node(og::print_node * const node, int lvl) {
+#if 0
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value to print
   if (node->argument()->is_typed(cdk::TYPE_INT)) {
@@ -191,6 +192,7 @@ void og::postfix_writer::do_print_node(og::print_node * const node, int lvl) {
     exit(1);
   }
   _pf.CALL("println"); // print a newline
+#endif
 }
 
 //---------------------------------------------------------------------------
