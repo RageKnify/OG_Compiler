@@ -188,6 +188,7 @@ string : string tSTRING         { $1->append(*$2); $$ = $1; delete $2; }
        ;
 
 lval : tIDENTIFIER              { $$ = new cdk::variable_node(LINE, $1); }
+     | expr '[' expr ']'        { $$ = new og::pointer_index_node(LINE, $1, $3); }
      ;
 
 %%
