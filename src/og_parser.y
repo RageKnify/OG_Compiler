@@ -45,6 +45,7 @@
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc tUNARY
+%nonassoc '['
 // %nonassoc tPRIMARY
 
 %type <s> string
