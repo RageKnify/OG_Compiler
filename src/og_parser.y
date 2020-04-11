@@ -33,8 +33,9 @@
 %token tIF tTHEN tELIF tELSE
 %token tOR tAND
 
-%nonassoc tIFX
-%nonassoc tELSE
+%nonassoc tIFX tFOR
+%nonassoc tTHEN tDO
+%nonassoc tELIF tELSE
 
 %right '='
 %left tOR
@@ -49,9 +50,9 @@
 // %nonassoc tPRIMARY
 
 %type <s> string
-%type <node> stmt vardec funcdec argdec localdec ifcontent
+%type <node> stmt vardec funcdec argdec localdec ifcontent dec
 %type <block_node> block
-%type <sequence> stmts exprs argdecs decs
+%type <sequence> stmts exprs argdecs decs file
 %type <expression> expr
 %type <lvalue> lval
 %type <type> type
@@ -61,6 +62,14 @@
 //-- The rules below will be included in yyparse, the main parsing function.
 %}
 %%
+
+file : dec      { $$ = new cdk::sequence_node(LINE, $1); }
+     | file dec { $$ = new cdk::sequence_node(LINE, $2, $1); }
+     ;
+
+dec : vardec ';'    { $$ = $1; }
+    | funcdec       { $$ = $1; }
+    ;
 
 vardec :          type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
        |          type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
