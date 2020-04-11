@@ -45,8 +45,7 @@
 %left tGE tLE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
-%nonassoc tUNARY
-%nonassoc '['
+%nonassoc tUNARY '['
 // %nonassoc tPRIMARY
 
 %type <s> string
