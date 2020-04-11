@@ -48,7 +48,7 @@
 // %nonassoc tPRIMARY
 
 %type <s> string
-%type <node> stmt vardec funcdec argdec localdec
+%type <node> stmt vardec funcdec argdec localdec ifcontent
 %type <block_node> block
 %type <sequence> stmts exprs argdecs decs
 %type <expression> expr
@@ -153,14 +153,18 @@ stmt : expr ';'                                 { $$ = new og::evaluation_node(L
      | tPRINTLN exprs ';'                       { $$ = new og::print_node(LINE, $2, true); }
      | tFOR decs ';' exprs ';' exprs tDO stmt   { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
      | tFOR exprs ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-     | tIF expr tTHEN stmt %prec tIFX           { $$ = new og::if_node(LINE, $2, $4); }
-     | tIF expr tTHEN stmt tELSE stmt           { $$ = new og::if_else_node(LINE, $2, $4, $6); }
+     | tIF ifcontent                            { $$ = $2; }
      | tBREAK                                   { $$ = new og::break_node(LINE); }
      | tCONTINUE                                { $$ = new og::continue_node(LINE); }
      | tRETURN ';'                              { $$ = new og::return_node(LINE, NULL); }
      | tRETURN expr  ';'                        { $$ = new og::return_node(LINE, $2); }
      | tRETURN exprs ';'                        { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
      ;
+
+ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1, $3); }
+          | expr tTHEN stmt tELIF ifcontent     { $$ = new og::if_else_node(LINE, $1, $3, $5); }
+          | expr tTHEN stmt tELSE stmt          { $$ = new og::if_else_node(LINE, $1, $3, $5); }
+          ;
 
 expr : tINTEGER                 { $$ = new cdk::integer_node(LINE, $1); }
      | string                   { $$ = new cdk::string_node(LINE, $1); }
