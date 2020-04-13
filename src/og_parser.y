@@ -50,7 +50,7 @@
 %left tGE tLE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
-%nonassoc tUNARY '['
+%nonassoc tUNARY '[' '@'
 // %nonassoc tPRIMARY
 %nonassoc tLVAL
 %nonassoc '('
@@ -218,6 +218,7 @@ string : string tSTRING         { $1->append(*$2); $$ = $1; delete $2; }
 
 lval : tIDENTIFIER %prec tLVAL  { $$ = new cdk::variable_node(LINE, $1); }
      | expr '[' expr ']'        { $$ = new og::pointer_index_node(LINE, $1, $3); }
+     | expr '@' tINTEGER        { $$ = new og::tuple_index_node(LINE, $1, new cdk::integer_node(LINE, $3)); }
      ;
 
 %%
