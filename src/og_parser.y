@@ -42,6 +42,7 @@
 %nonassoc tSTRING
 %nonassoc ';'
 %nonassoc ','
+%nonassoc ')'
 %left tOR
 %left tAND
 %nonassoc '~'
