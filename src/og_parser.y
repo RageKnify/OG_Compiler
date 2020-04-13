@@ -38,7 +38,11 @@
 %nonassoc tELIF tELSE
 
 %right '='
+%nonassoc tEXPR
+%nonassoc tSTRING
+%nonassoc ';'
 %nonassoc ','
+%nonassoc ')'
 %left tOR
 %left tAND
 %nonassoc '~'
@@ -48,6 +52,8 @@
 %left '*' '/' '%'
 %nonassoc tUNARY '['
 // %nonassoc tPRIMARY
+%nonassoc tLVAL
+%nonassoc '('
 
 %type <s> string
 %type <node> stmt vardec funcdec argdec localdec ifcontent dec
@@ -113,8 +119,8 @@ funcdec :          type       tIDENTIFIER '(' ')'               { $$ = new og::f
         | tPUBLIC  tAUTO      tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $3, $5, $7); }
         ;
 
-exprs : expr           { $$ = new cdk::sequence_node(LINE, $1); }
-      | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
+exprs : expr %prec tEXPR   { $$ = new cdk::sequence_node(LINE, $1); }
+      | exprs ',' expr     { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
 argdec : type  tIDENTIFIER      { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
@@ -177,7 +183,7 @@ ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1,
           ;
 
 expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
-     | string                       { $$ = new cdk::string_node(LINE, $1); }
+     | string   %prec tEXPR         { $$ = new cdk::string_node(LINE, $1); }
      | '-' expr %prec tUNARY        { $$ = new cdk::neg_node(LINE, $2); }
      | '+' expr %prec tUNARY        { $$ = new og::identity_node(LINE, $2); }
      | lval '?' %prec tUNARY        { $$ = new og::address_of_node(LINE, $1); }
@@ -210,7 +216,7 @@ string : string tSTRING         { $1->append(*$2); $$ = $1; delete $2; }
        | tSTRING                { $$ = $1; }
        ;
 
-lval : tIDENTIFIER              { $$ = new cdk::variable_node(LINE, $1); }
+lval : tIDENTIFIER %prec tLVAL  { $$ = new cdk::variable_node(LINE, $1); }
      | expr '[' expr ']'        { $$ = new og::pointer_index_node(LINE, $1, $3); }
      ;
 
