@@ -38,6 +38,7 @@
 %nonassoc tELIF tELSE
 
 %right '='
+%nonassoc tEXPR
 %nonassoc ','
 %left tOR
 %left tAND
@@ -115,8 +116,8 @@ funcdec :          type       tIDENTIFIER '(' ')'               { $$ = new og::f
         | tPUBLIC  tAUTO      tIDENTIFIER '(' argdecs ')' block { $$ = new og::function_definition_node(LINE, tPUBLIC, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $3, $5, $7); }
         ;
 
-exprs : expr           { $$ = new cdk::sequence_node(LINE, $1); }
-      | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
+exprs : expr %prec tEXPR   { $$ = new cdk::sequence_node(LINE, $1); }
+      | exprs ',' expr     { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
 argdec : type  tIDENTIFIER      { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
