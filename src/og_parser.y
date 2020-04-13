@@ -39,6 +39,7 @@
 
 %right '='
 %nonassoc tEXPR
+%nonassoc tSTRING
 %nonassoc ','
 %left tOR
 %left tAND
@@ -180,7 +181,7 @@ ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1,
           ;
 
 expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
-     | string                       { $$ = new cdk::string_node(LINE, $1); }
+     | string   %prec tEXPR         { $$ = new cdk::string_node(LINE, $1); }
      | '-' expr %prec tUNARY        { $$ = new cdk::neg_node(LINE, $2); }
      | '+' expr %prec tUNARY        { $$ = new og::identity_node(LINE, $2); }
      | lval '?' %prec tUNARY        { $$ = new og::address_of_node(LINE, $1); }
