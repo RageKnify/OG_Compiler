@@ -175,30 +175,32 @@ ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1,
           | expr tTHEN stmt tELSE stmt          { $$ = new og::if_else_node(LINE, $1, $3, $5); }
           ;
 
-expr : tINTEGER                 { $$ = new cdk::integer_node(LINE, $1); }
-     | string                   { $$ = new cdk::string_node(LINE, $1); }
-     | '-' expr %prec tUNARY    { $$ = new cdk::neg_node(LINE, $2); }
-     | '+' expr %prec tUNARY    { $$ = new og::identity_node(LINE, $2); }
-     | lval '?' %prec tUNARY    { $$ = new og::address_of_node(LINE, $1); }
-     | '~' expr                 { $$ = new cdk::not_node(LINE, $2); }
-     | expr '+' expr            { $$ = new cdk::add_node(LINE, $1, $3); }
-     | expr '-' expr            { $$ = new cdk::sub_node(LINE, $1, $3); }
-     | expr '*' expr            { $$ = new cdk::mul_node(LINE, $1, $3); }
-     | expr '/' expr            { $$ = new cdk::div_node(LINE, $1, $3); }
-     | expr '%' expr            { $$ = new cdk::mod_node(LINE, $1, $3); }
-     | expr '<' expr            { $$ = new cdk::lt_node(LINE, $1, $3); }
-     | expr '>' expr            { $$ = new cdk::gt_node(LINE, $1, $3); }
-     | expr tGE expr            { $$ = new cdk::ge_node(LINE, $1, $3); }
-     | expr tLE expr            { $$ = new cdk::le_node(LINE, $1, $3); }
-     | expr tNE expr            { $$ = new cdk::ne_node(LINE, $1, $3); }
-     | expr tEQ expr            { $$ = new cdk::eq_node(LINE, $1, $3); }
-     | expr tOR expr            { $$ = new cdk::or_node(LINE, $1, $3); }
-     | expr tAND expr           { $$ = new cdk::and_node(LINE, $1, $3); }
-     | '[' expr ']'             { $$ = new og::memory_reservation_node(LINE, $2); }
-     | '(' expr ')'             { $$ = $2; }
-     | tREAD                    { $$ = new og::read_node(LINE); }
-     | lval                     { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
-     | lval '=' expr            { $$ = new cdk::assignment_node(LINE, $1, $3); }
+expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
+     | string                       { $$ = new cdk::string_node(LINE, $1); }
+     | '-' expr %prec tUNARY        { $$ = new cdk::neg_node(LINE, $2); }
+     | '+' expr %prec tUNARY        { $$ = new og::identity_node(LINE, $2); }
+     | lval '?' %prec tUNARY        { $$ = new og::address_of_node(LINE, $1); }
+     | '~' expr                     { $$ = new cdk::not_node(LINE, $2); }
+     | expr '+' expr                { $$ = new cdk::add_node(LINE, $1, $3); }
+     | expr '-' expr                { $$ = new cdk::sub_node(LINE, $1, $3); }
+     | expr '*' expr                { $$ = new cdk::mul_node(LINE, $1, $3); }
+     | expr '/' expr                { $$ = new cdk::div_node(LINE, $1, $3); }
+     | expr '%' expr                { $$ = new cdk::mod_node(LINE, $1, $3); }
+     | expr '<' expr                { $$ = new cdk::lt_node(LINE, $1, $3); }
+     | expr '>' expr                { $$ = new cdk::gt_node(LINE, $1, $3); }
+     | expr tGE expr                { $$ = new cdk::ge_node(LINE, $1, $3); }
+     | expr tLE expr                { $$ = new cdk::le_node(LINE, $1, $3); }
+     | expr tNE expr                { $$ = new cdk::ne_node(LINE, $1, $3); }
+     | expr tEQ expr                { $$ = new cdk::eq_node(LINE, $1, $3); }
+     | expr tOR expr                { $$ = new cdk::or_node(LINE, $1, $3); }
+     | expr tAND expr               { $$ = new cdk::and_node(LINE, $1, $3); }
+     | '[' expr ']'                 { $$ = new og::memory_reservation_node(LINE, $2); }
+     | '(' expr ')'                 { $$ = $2; }
+     | tREAD                        { $$ = new og::read_node(LINE); }
+     | lval                         { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
+     | lval '=' expr                { $$ = new cdk::assignment_node(LINE, $1, $3); }
+     | tIDENTIFIER '(' ')'          { $$ = new og::function_call_node(LINE, $1); }
+     | tIDENTIFIER '(' exprs ')'    { $$ = new og::function_call_node(LINE, $1, $3); }
      ;
 
 string : string tSTRING         { $1->append(*$2); $$ = $1; delete $2; }
