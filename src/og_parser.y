@@ -48,6 +48,8 @@
 %left '*' '/' '%'
 %nonassoc tUNARY '['
 // %nonassoc tPRIMARY
+%nonassoc tLVAL
+%nonassoc '('
 
 %type <s> string
 %type <node> stmt vardec funcdec argdec localdec ifcontent dec
@@ -210,7 +212,7 @@ string : string tSTRING         { $1->append(*$2); $$ = $1; delete $2; }
        | tSTRING                { $$ = $1; }
        ;
 
-lval : tIDENTIFIER              { $$ = new cdk::variable_node(LINE, $1); }
+lval : tIDENTIFIER %prec tLVAL  { $$ = new cdk::variable_node(LINE, $1); }
      | expr '[' expr ']'        { $$ = new og::pointer_index_node(LINE, $1, $3); }
      ;
 
