@@ -40,6 +40,7 @@
 %right '='
 %nonassoc tEXPR
 %nonassoc tSTRING
+%nonassoc ';'
 %nonassoc ','
 %left tOR
 %left tAND
