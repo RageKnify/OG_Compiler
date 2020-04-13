@@ -50,10 +50,9 @@
 %left tGE tLE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
-%nonassoc tUNARY '[' '@'
-// %nonassoc tPRIMARY
+%nonassoc tUNARY '?'
 %nonassoc tLVAL
-%nonassoc '('
+%nonassoc tPRIMARY '(' '[' '@'
 
 %type <s> string
 %type <node> stmt vardec funcdec argdec localdec ifcontent dec
@@ -186,7 +185,7 @@ expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
      | string   %prec tEXPR         { $$ = new cdk::string_node(LINE, $1); }
      | '-' expr %prec tUNARY        { $$ = new cdk::neg_node(LINE, $2); }
      | '+' expr %prec tUNARY        { $$ = new og::identity_node(LINE, $2); }
-     | lval '?' %prec tUNARY        { $$ = new og::address_of_node(LINE, $1); }
+     | lval '?'                     { $$ = new og::address_of_node(LINE, $1); }
      | '~' expr                     { $$ = new cdk::not_node(LINE, $2); }
      | expr '+' expr                { $$ = new cdk::add_node(LINE, $1, $3); }
      | expr '-' expr                { $$ = new cdk::sub_node(LINE, $1, $3); }
