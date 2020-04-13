@@ -196,6 +196,8 @@ expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
      | expr tAND expr               { $$ = new cdk::and_node(LINE, $1, $3); }
      | '[' expr ']'                 { $$ = new og::memory_reservation_node(LINE, $2); }
      | '(' expr ')'                 { $$ = $2; }
+     | tSIZEOF '(' expr ')'         { $$ = new og::sizeof_node(LINE, $3); }
+     | tSIZEOF '(' exprs ')'        { $$ = new og::sizeof_node(LINE, new og::tuple_node(LINE, $3)); }
      | tREAD                        { $$ = new og::read_node(LINE); }
      | lval                         { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr                { $$ = new cdk::assignment_node(LINE, $1, $3); }
