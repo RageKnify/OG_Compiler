@@ -38,6 +38,7 @@
 %nonassoc tELIF tELSE
 
 %right '='
+%nonassoc ','
 %left tOR
 %left tAND
 %nonassoc '~'
