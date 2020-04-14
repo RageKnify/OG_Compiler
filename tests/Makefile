@@ -43,6 +43,8 @@ all: $(EXECUTABLES) .PHONY
 %:%.o
 	$(LD) $< -o $@ $(LDFLAGS)
 
+xml: .PHONY
+	./xmlall.sh
 
 test: .PHONY
 	./testall.sh
@@ -56,7 +58,7 @@ test-mk: $(TESTS) .PHONY
 	./$< > $@
 
 clean: $(EXEC_CLEAN) .PHONY
-	$(RM) $(OBJECTS) $(EXECUTABLES) *.c *.asm *.out
+	$(RM) $(OBJECTS) $(EXECUTABLES) *.c *.asm *.out *.xml
 
 #---------------------------------------------------------------
 #                           THE END
