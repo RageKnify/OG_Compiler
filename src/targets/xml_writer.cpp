@@ -17,7 +17,7 @@ static std::string qualifier_to_string(int qualifier) {
 			return "required";
 			break;
 		default:
-			return "unkown";
+			return "unknown";
 			break;
 	}
 }
