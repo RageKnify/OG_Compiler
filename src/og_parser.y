@@ -203,6 +203,7 @@ ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1,
 
 expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
      | tREAL                        { $$ = new cdk::double_node(LINE, $1); }
+     | tNULLPTR                     { $$ = new og::nullptr_node(LINE); }
      | string   %prec tEXPR         { $$ = new cdk::string_node(LINE, $1); }
      | '-' expr %prec tUNARY        { $$ = new cdk::neg_node(LINE, $2); }
      | '+' expr %prec tUNARY        { $$ = new og::identity_node(LINE, $2); }
