@@ -176,13 +176,24 @@ stmt : expr ';'                                     { $$ = new og::evaluation_no
      | tPRINT exprs ';'                             { $$ = new og::print_node(LINE, $2); }
      | tPRINTLN exprs ';'                           { $$ = new og::print_node(LINE, $2, true); }
      | tFOR localdecs ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-     | tFOR exprs ';' exprs ';' exprs tDO stmt      { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+     | tFOR localdecs ';' exprs ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, $4, NULL, $7); }
+     | tFOR localdecs ';'       ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, $5, $7); }
+     | tFOR localdecs ';'       ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, NULL, $6); }
+     | tFOR exprs     ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+     | tFOR exprs     ';' exprs ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, $4, NULL, $7); }
+     | tFOR exprs     ';'       ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, $5, $7); }
+     | tFOR exprs     ';'       ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, NULL, $6); }
+     | tFOR           ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, NULL, $3, $5, $7); }
+     | tFOR           ';' exprs ';'       tDO stmt  { $$ = new og::for_node(LINE, NULL, $3, NULL, $6); }
+     | tFOR           ';'       ';' exprs tDO stmt  { $$ = new og::for_node(LINE, NULL, NULL, $4, $6); }
+     | tFOR           ';'       ';'       tDO stmt  { $$ = new og::for_node(LINE, NULL, NULL, NULL, $5); }
      | tIF ifcontent                                { $$ = $2; }
      | tBREAK                                       { $$ = new og::break_node(LINE); }
      | tCONTINUE                                    { $$ = new og::continue_node(LINE); }
      | tRETURN ';'                                  { $$ = new og::return_node(LINE, NULL); }
      | tRETURN expr  ';'                            { $$ = new og::return_node(LINE, $2); }
      | tRETURN exprs ';'                            { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
+     | block                                        { $$ = $1; }
      ;
 
 ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1, $3); }
