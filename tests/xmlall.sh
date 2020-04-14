@@ -10,6 +10,8 @@ export red="\033[31;1m"
 export green="\033[32;1m"
 export reset="\033[0m"
 
+! [ -d results ] && mkdir results
+
 testone() {
 	set -e
 
