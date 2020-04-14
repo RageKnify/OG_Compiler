@@ -156,9 +156,9 @@ localdecs : localdec            { $$ = new cdk::sequence_node(LINE, $1); }
           | localdecs localdec  { $$ = new cdk::sequence_node(LINE, $2, $1); }
           ;
 
-localdec : type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
-         | type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
-         | tAUTO identifiers '=' exprs  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
+localdec : type  tIDENTIFIER ';'            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
+         | type  tIDENTIFIER '=' expr ';'   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
+         | tAUTO identifiers '=' exprs  ';' { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
          ;
 
 stmts : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
