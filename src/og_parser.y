@@ -55,9 +55,9 @@
 %nonassoc tPRIMARY '(' '[' '@'
 
 %type <s> string
-%type <node> stmt vardec funcdec argdec localdec ifcontent dec
+%type <node> stmt vardec funcdec argdec localdec blockdec ifcontent dec
 %type <block_node> block
-%type <sequence> stmts exprs argdecs localdecs decs
+%type <sequence> stmts exprs argdecs localdecs blockdecs decs
 %type <expression> expr
 %type <lvalue> lval
 %type <type> type
@@ -147,19 +147,26 @@ identifiers : identifiers ',' tIDENTIFIER { $1->push_back($3); $$ = $1; }
             | tIDENTIFIER                 { $$ = new std::vector<std::string*>({$1}); }
             ;
 
-block : '{' localdecs stmts '}' { $$ = new og::block_node(LINE, $2, $3); }
-      | '{' localdecs '}'       { $$ = new og::block_node(LINE, $2, NULL); }
+block : '{' blockdecs stmts '}' { $$ = new og::block_node(LINE, $2, $3); }
+      | '{' blockdecs '}'       { $$ = new og::block_node(LINE, $2, NULL); }
       | '{' stmts '}'           { $$ = new og::block_node(LINE, NULL, $2); }
       ;
 
-localdecs : localdec            { $$ = new cdk::sequence_node(LINE, $1); }
-          | localdecs localdec  { $$ = new cdk::sequence_node(LINE, $2, $1); }
+blockdecs : blockdec            { $$ = new cdk::sequence_node(LINE, $1); }
+          | blockdecs blockdec  { $$ = new cdk::sequence_node(LINE, $2, $1); }
           ;
 
-localdec : type  tIDENTIFIER ';'            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
-         | type  tIDENTIFIER '=' expr ';'   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
-         | tAUTO identifiers '=' exprs  ';' { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
+blockdec : localdec ';' { $$ = $1; }
          ;
+
+localdec : type  tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
+         | type  tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
+         | tAUTO identifiers '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
+         ;
+
+localdecs : localdec                { $$ = new cdk::sequence_node(LINE, $1); }
+          | localdecs ',' localdec  { $$ = new cdk::sequence_node(LINE, $3, $1); }
+          ;
 
 stmts : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
       | stmts stmt   { $$ = new cdk::sequence_node(LINE, $2, $1); }
