@@ -57,7 +57,7 @@
 %type <s> string
 %type <node> stmt vardec funcdec argdec localdec ifcontent dec
 %type <block_node> block
-%type <sequence> stmts exprs argdecs decs file
+%type <sequence> stmts exprs argdecs localdecs decs
 %type <expression> expr
 %type <lvalue> lval
 %type <type> type
@@ -68,8 +68,10 @@
 %}
 %%
 
-file : dec      { $$ = new cdk::sequence_node(LINE, $1); }
-     | file dec { $$ = new cdk::sequence_node(LINE, $2, $1); }
+file : decs     { compiler->ast($1); }
+
+decs : dec      { $$ = new cdk::sequence_node(LINE, $1); }
+     | decs dec { $$ = new cdk::sequence_node(LINE, $2, $1); }
      ;
 
 dec : vardec ';'    { $$ = $1; }
@@ -145,14 +147,14 @@ identifiers : identifiers ',' tIDENTIFIER { $1->push_back($3); $$ = $1; }
             | tIDENTIFIER                 { $$ = new std::vector<std::string*>({$1}); }
             ;
 
-block : '{' decs stmts '}'     { $$ = new og::block_node(LINE, $2, $3); }
-      | '{' decs '}'           { $$ = new og::block_node(LINE, $2, NULL); }
-      | '{' stmts '}'          { $$ = new og::block_node(LINE, NULL, $2); }
+block : '{' localdecs stmts '}' { $$ = new og::block_node(LINE, $2, $3); }
+      | '{' localdecs '}'       { $$ = new og::block_node(LINE, $2, NULL); }
+      | '{' stmts '}'           { $$ = new og::block_node(LINE, NULL, $2); }
       ;
 
-decs : localdec        { $$ = new cdk::sequence_node(LINE, $1); }
-     | decs localdec   { $$ = new cdk::sequence_node(LINE, $2, $1); }
-     ;
+localdecs : localdec            { $$ = new cdk::sequence_node(LINE, $1); }
+          | localdecs localdec  { $$ = new cdk::sequence_node(LINE, $2, $1); }
+          ;
 
 localdec : type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
          | type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
@@ -163,17 +165,17 @@ stmts : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
       | stmts stmt   { $$ = new cdk::sequence_node(LINE, $2, $1); }
       ;
 
-stmt : expr ';'                                 { $$ = new og::evaluation_node(LINE, $1); }
-     | tPRINT exprs ';'                         { $$ = new og::print_node(LINE, $2); }
-     | tPRINTLN exprs ';'                       { $$ = new og::print_node(LINE, $2, true); }
-     | tFOR decs ';' exprs ';' exprs tDO stmt   { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-     | tFOR exprs ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-     | tIF ifcontent                            { $$ = $2; }
-     | tBREAK                                   { $$ = new og::break_node(LINE); }
-     | tCONTINUE                                { $$ = new og::continue_node(LINE); }
-     | tRETURN ';'                              { $$ = new og::return_node(LINE, NULL); }
-     | tRETURN expr  ';'                        { $$ = new og::return_node(LINE, $2); }
-     | tRETURN exprs ';'                        { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
+stmt : expr ';'                                     { $$ = new og::evaluation_node(LINE, $1); }
+     | tPRINT exprs ';'                             { $$ = new og::print_node(LINE, $2); }
+     | tPRINTLN exprs ';'                           { $$ = new og::print_node(LINE, $2, true); }
+     | tFOR localdecs ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+     | tFOR exprs ';' exprs ';' exprs tDO stmt      { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+     | tIF ifcontent                                { $$ = $2; }
+     | tBREAK                                       { $$ = new og::break_node(LINE); }
+     | tCONTINUE                                    { $$ = new og::continue_node(LINE); }
+     | tRETURN ';'                                  { $$ = new og::return_node(LINE, NULL); }
+     | tRETURN expr  ';'                            { $$ = new og::return_node(LINE, $2); }
+     | tRETURN exprs ';'                            { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
      ;
 
 ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1, $3); }
