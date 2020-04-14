@@ -3,6 +3,25 @@
 #include "targets/type_checker.h"
 #include "ast/all.h"  // automatically generated
 
+#include "og_parser.tab.h"
+
+static std::string qualifier_to_string(int qualifier) {
+	switch (qualifier) {
+		case tPRIVATE:
+			return "private";
+			break;
+		case tPUBLIC:
+			return "public";
+			break;
+		case tREQUIRE:
+			return "required";
+			break;
+		default:
+			return "unkown";
+			break;
+	}
+}
+
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_nil_node(cdk::nil_node * const node, int lvl) {
@@ -214,6 +233,18 @@ void og::xml_writer::do_block_node(og::block_node *const node, int lvl) {
 }
 
 void og::xml_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+	os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='";
+	os() << qualifier_to_string(node->qualifier());
+	os() << "' type='" << to_string(std::shared_ptr<cdk::basic_type>(node->type()));
+	os() << "' id='" << *node->identifier();
+	os() << "'>" << std::endl;
+	openTag("parameters", lvl+2);
+	if (node->parameters() != NULL) {
+		node->parameters()->accept(this, lvl + 4);
+	}
+	closeTag("parameters", lvl+2);
+	node->block()->accept(this, lvl+2);
+	closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
