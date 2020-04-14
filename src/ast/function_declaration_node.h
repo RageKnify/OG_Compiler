@@ -15,15 +15,15 @@ namespace og {
     int _qualifier;
     cdk::basic_type *_type;
     std::string *_identifier;
-    cdk::sequence_node *_arguments;
+    cdk::sequence_node *_parameters;
 
   public:
     inline function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, std::string *identifier) :
-      cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _arguments(new cdk::sequence_node(lineno)) {
+      cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _parameters(NULL) {
     }
 
-    inline function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, std::string *identifier, cdk::sequence_node *arguments) :
-      cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _arguments(arguments) {
+    inline function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, std::string *identifier, cdk::sequence_node *parameters) :
+      cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _parameters(parameters) {
     }
 
   public:
@@ -39,8 +39,8 @@ namespace og {
       return _identifier;
     }
 
-    inline cdk::sequence_node *arguments() {
-      return _arguments;
+    inline cdk::sequence_node *parameters() {
+      return _parameters;
     }
 
     void accept(basic_ast_visitor *sp, int level) {
