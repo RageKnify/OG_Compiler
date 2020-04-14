@@ -233,6 +233,18 @@ void og::xml_writer::do_function_call_node(og::function_call_node *const node, i
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_block_node(og::block_node *const node, int lvl) {
+	openTag(node, lvl);
+	if (node->declarations() != NULL) {
+		openTag("declarations", lvl+2);
+		node->declarations()->accept(this, lvl+4);
+		closeTag("declarations", lvl+2);
+	}
+	if (node->instructions() != NULL) {
+		openTag("instructions", lvl+2);
+		node->instructions()->accept(this, lvl+4);
+		closeTag("instructions", lvl+2);
+	}
+	closeTag(node, lvl);
 }
 
 void og::xml_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
