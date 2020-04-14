@@ -13,10 +13,15 @@
 %}
 EXP [eE]-?[0-9]+
 
-%x X_STRING X_STRING_IGNORE
+%x X_STRING X_STRING_IGNORE X_COMMENT
 %%
 
-"--".*                 ; /* ignore comments */
+"//".*                 ; /* ignore comments */
+
+"/*"                   yy_push_state(X_COMMENT);
+<X_COMMENT>"*/"        yy_pop_state();
+<X_COMMENT>"/*"        yy_push_state(X_COMMENT);
+<X_COMMENT>.|\n        ; /* ignore comments */
 
 ">="                   return tGE;
 "<="                   return tLE;
