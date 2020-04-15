@@ -5,4 +5,4 @@ before_install:
     - sudo apt-get install byacc # yacc
     - sudo apt-get install flex # lex
 language: c
-script: make
+script: make xml
