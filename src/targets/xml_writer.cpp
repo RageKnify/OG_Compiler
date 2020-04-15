@@ -309,6 +309,9 @@ void og::xml_writer::do_nullptr_node(og::nullptr_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_return_node(og::return_node* const node, int lvl) {
+  openTag(node, lvl);
+  if (node->retval() != NULL) node->retval()->accept(this, lvl+2);
+  closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
