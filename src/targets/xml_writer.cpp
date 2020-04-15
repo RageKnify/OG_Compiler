@@ -37,7 +37,7 @@ void og::xml_writer::do_not_node(cdk::not_node * const node, int lvl) {
   do_unary_operation(node, lvl);
 }
 void og::xml_writer::do_and_node(cdk::and_node * const node, int lvl) {
-  // EMPTY
+  do_binary_operation(node, lvl);
 }
 void og::xml_writer::do_or_node(cdk::or_node * const node, int lvl) {
   do_binary_operation(node, lvl);
