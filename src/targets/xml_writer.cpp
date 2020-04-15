@@ -240,6 +240,14 @@ void og::xml_writer::do_function_declaration_node(og::function_declaration_node 
 }
 
 void og::xml_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+	os() << std::string(lvl, ' ') << "<" << node->label() << " id='" << *node->identifier();
+	os() << "'>" << std::endl;
+	openTag("arguments", lvl+2);
+	if (node->arguments() != NULL) {
+		node->arguments()->accept(this, lvl + 4);
+	}
+	closeTag("arguments", lvl+2);
+	closeTag(node, lvl);
 }
 //---------------------------------------------------------------------------
 
