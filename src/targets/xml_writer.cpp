@@ -226,6 +226,17 @@ void og::xml_writer::do_memory_reservation_node(og::memory_reservation_node *con
 }
 
 void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+	os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='";
+	os() << qualifier_to_string(node->qualifier());
+	os() << "' type='" << to_string(std::shared_ptr<cdk::basic_type>(node->type()));
+	os() << "' id='" << *node->identifier();
+	os() << "'>" << std::endl;
+	openTag("parameters", lvl+2);
+	if (node->parameters() != NULL) {
+		node->parameters()->accept(this, lvl + 4);
+	}
+	closeTag("parameters", lvl+2);
+	closeTag(node, lvl);
 }
 
 void og::xml_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
