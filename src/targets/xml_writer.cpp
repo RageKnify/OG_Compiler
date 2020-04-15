@@ -31,7 +31,7 @@ void og::xml_writer::do_data_node(cdk::data_node * const node, int lvl) {
   // EMPTY
 }
 void og::xml_writer::do_double_node(cdk::double_node * const node, int lvl) {
-  // EMPTY
+  process_literal(node, lvl);
 }
 void og::xml_writer::do_not_node(cdk::not_node * const node, int lvl) {
   do_unary_operation(node, lvl);
