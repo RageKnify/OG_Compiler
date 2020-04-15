@@ -173,17 +173,27 @@ void og::xml_writer::do_read_node(og::read_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
-#if 0
   /* ASSERT_SAFE_EXPRESSIONS; */
   openTag(node, lvl);
-  openTag("condition", lvl + 2);
-  node->condition()->accept(this, lvl + 4);
-  closeTag("condition", lvl + 2);
+  if (node->inits() != NULL) {
+    openTag("inits", lvl + 2);
+    node->inits()->accept(this, lvl + 4);
+    closeTag("inits", lvl + 2);
+  }
+  if (node->condition() != NULL) {
+    openTag("condition", lvl + 2);
+    node->condition()->accept(this, lvl + 4);
+    closeTag("condition", lvl + 2);
+  }
+  if (node->incrs() != NULL) {
+    openTag("incrs", lvl + 2);
+    node->incrs()->accept(this, lvl + 4);
+    closeTag("incrs", lvl + 2);
+  }
   openTag("block", lvl + 2);
   node->block()->accept(this, lvl + 4);
   closeTag("block", lvl + 2);
   closeTag(node, lvl);
-#endif
 }
 
 //---------------------------------------------------------------------------
