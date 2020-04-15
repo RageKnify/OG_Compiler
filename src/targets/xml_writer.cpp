@@ -317,6 +317,22 @@ void og::xml_writer::do_return_node(og::return_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+	os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='";
+	os() << qualifier_to_string(node->qualifier());
+	os() << "' type='" << to_string(std::shared_ptr<cdk::basic_type>(node->varType()));
+	os() << "'>" << std::endl;
+	openTag("identifiers", lvl+2);
+  for (size_t i = 0; i < node->identifiers()->size(); i++) {
+    os() << std::string(lvl+4, ' ') << "<identifier>";
+    os() << *node->identifiers()->at(i) << "</identifier>" << std::endl;
+  }
+	closeTag("identifiers", lvl+2);
+  if (node->initializer() != NULL) {
+    openTag("initializer", lvl+2);
+    node->initializer()->accept(this, lvl+4);
+    closeTag("initializer", lvl+2);
+  }
+	closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
