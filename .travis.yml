@@ -4,5 +4,6 @@ before_install:
     - sudo apt-get install yasm
     - sudo apt-get install byacc # yacc
     - sudo apt-get install flex # lex
+    - sudo apt-get install parallel
 language: c
 script: make xml
