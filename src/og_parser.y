@@ -42,7 +42,6 @@
 %nonassoc tSTRING
 %nonassoc ';'
 %nonassoc ','
-%nonassoc ')'
 %left tOR
 %left tAND
 %nonassoc '~'
@@ -51,8 +50,7 @@
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc tUNARY '?'
-%nonassoc tLVAL
-%nonassoc tPRIMARY '(' '[' '@'
+%nonassoc tPRIMARY '[' '@'
 
 %type <s> string
 %type <node> stmt vardec funcdec argdec localdec blockdec ifcontent dec
@@ -224,7 +222,6 @@ expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
      | expr tAND expr               { $$ = new cdk::and_node(LINE, $1, $3); }
      | '[' expr ']'                 { $$ = new og::memory_reservation_node(LINE, $2); }
      | '(' expr ')'                 { $$ = $2; }
-     | tSIZEOF '(' expr ')'         { $$ = new og::sizeof_node(LINE, $3); }
      | tSIZEOF '(' exprs ')'        { $$ = new og::sizeof_node(LINE, new og::tuple_node(LINE, $3)); }
      | tREAD                        { $$ = new og::read_node(LINE); }
      | lval                         { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
@@ -237,7 +234,7 @@ string : string tSTRING         { $1->append(*$2); $$ = $1; delete $2; }
        | tSTRING                { $$ = $1; }
        ;
 
-lval : tIDENTIFIER %prec tLVAL  { $$ = new cdk::variable_node(LINE, $1); }
+lval : tIDENTIFIER              { $$ = new cdk::variable_node(LINE, $1); }
      | expr '[' expr ']'        { $$ = new og::pointer_index_node(LINE, $1, $3); }
      | expr '@' tINTEGER        { $$ = new og::tuple_index_node(LINE, $1, new cdk::integer_node(LINE, $3)); }
      ;
