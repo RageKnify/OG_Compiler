@@ -223,6 +223,9 @@ void og::xml_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
 }
 
 void og::xml_writer::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
+  openTag(node, lvl);
+  node->argument()->accept(this, lvl+2);
+  closeTag(node, lvl);
 }
 
 void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
