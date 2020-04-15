@@ -154,6 +154,7 @@ void og::xml_writer::do_evaluation_node(og::evaluation_node * const node, int lv
 }
 
 void og::xml_writer::do_print_node(og::print_node * const node, int lvl) {
+  /* ASSERT_SAFE_EXPRESSIONS; */
 	os() << std::string(lvl, ' ') << "<" << node->label() << " newline='";
 	os() << (node->newline() ? "true" : "false");
 	os() << "'>" << std::endl;
