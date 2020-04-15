@@ -13,12 +13,12 @@ namespace og {
 		cdk::basic_node* _block;
 
 	public:
-		inline for_node(int lineno, cdk::sequence_node* init, cdk::sequence_node* condition,
+		inline for_node(int lineno, cdk::sequence_node* inits, cdk::sequence_node* condition,
 				cdk::sequence_node* incrs, cdk::basic_node* block) : basic_node(lineno),
-				_inits(init), _condition(condition), _incrs(incrs), _block(block) {
+				_inits(inits), _condition(condition), _incrs(incrs), _block(block) {
 		}
 
-		inline cdk::sequence_node* init() {
+		inline cdk::sequence_node* inits() {
 			return _inits;
 		}
 
