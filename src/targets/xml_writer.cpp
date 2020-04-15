@@ -287,6 +287,8 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node *c
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_break_node(og::break_node* const node, int lvl) {
+  openTag(node, lvl);
+  closeTag(node, lvl);
 }
 
 void og::xml_writer::do_continue_node(og::continue_node * const node, int lvl) {
