@@ -315,6 +315,14 @@ void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node*
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_pointer_index_node(og::pointer_index_node* const node, int lvl) {
+  openTag(node, lvl);
+  openTag("base", lvl+2);
+  node->base()->accept(this, lvl+4);
+  closeTag("base", lvl+2);
+  openTag("index", lvl+2);
+  node->index()->accept(this, lvl+4);
+  closeTag("index", lvl+2);
+  closeTag(node, lvl);
 }
 
 void og::xml_writer::do_tuple_index_node(og::tuple_index_node * const node, int lvl) {
