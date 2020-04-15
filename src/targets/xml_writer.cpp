@@ -318,6 +318,6 @@ void og::xml_writer::do_tuple_node(og::tuple_node* const node, int lvl) {
 
 void og::xml_writer::do_identity_node(og::identity_node *const node, int lvl) {
   openTag(node, lvl);
-  node->accept(this, lvl+2);
+  node->argument()->accept(this, lvl+2);
   closeTag(node, lvl);
 }
