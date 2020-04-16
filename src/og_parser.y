@@ -34,7 +34,7 @@
 %token tOR tAND
 
 %nonassoc tIFX
-%nonassoc tTHEN tDO
+%nonassoc tTHEN
 %nonassoc tELIF tELSE
 
 %right '='
@@ -46,7 +46,7 @@
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc tUNARY '?'
-%nonassoc tPRIMARY '[' '@'
+%nonassoc '[' '@'
 
 %type <s> string
 %type <node> stmt vardec funcdec param fordec blockdec ifcontent dec autodec
