@@ -33,14 +33,11 @@
 %token tIF tTHEN tELIF tELSE
 %token tOR tAND
 
-%nonassoc tIFX tFOR
+%nonassoc tIFX
 %nonassoc tTHEN tDO
 %nonassoc tELIF tELSE
 
 %right '='
-%nonassoc tEXPR
-%nonassoc ';'
-%nonassoc ','
 %left tOR
 %left tAND
 %nonassoc '~'
@@ -188,7 +185,6 @@ stmt : expr ';'                                     { $$ = new og::evaluation_no
      | tBREAK                                       { $$ = new og::break_node(LINE); }
      | tCONTINUE                                    { $$ = new og::continue_node(LINE); }
      | tRETURN ';'                                  { $$ = new og::return_node(LINE, NULL); }
-     | tRETURN expr  ';'                            { $$ = new og::return_node(LINE, $2); }
      | tRETURN exprs ';'                            { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
      | block                                        { $$ = $1; }
      ;
