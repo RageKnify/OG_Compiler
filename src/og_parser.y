@@ -49,9 +49,9 @@
 %nonassoc tPRIMARY '[' '@'
 
 %type <s> string
-%type <node> stmt vardec funcdec param localdec blockdec ifcontent dec autodec
+%type <node> stmt vardec funcdec param fordec blockdec ifcontent dec autodec
 %type <block_node> block
-%type <sequence> stmts exprs params localdecs blockdecs decs
+%type <sequence> stmts exprs params fordecs blockdecs decs
 %type <expression> expr
 %type <lvalue> lval
 %type <type> type
@@ -156,13 +156,13 @@ blockdec : type  tIDENTIFIER ';'           { $$ = new og::variable_declaration_n
          | tAUTO identifiers '=' exprs ';' { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
          ;
 
-localdec : type  tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
-         | type  tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
-         ;
+fordec : type  tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
+       | type  tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
+       ;
 
-localdecs : localdec                { $$ = new cdk::sequence_node(LINE, $1); }
-          | localdecs ',' localdec  { $$ = new cdk::sequence_node(LINE, $3, $1); }
-          ;
+fordecs : fordec                { $$ = new cdk::sequence_node(LINE, $1); }
+        | fordecs ',' fordec    { $$ = new cdk::sequence_node(LINE, $3, $1); }
+        ;
 
 autodec : tAUTO identifiers '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
         ;
@@ -174,10 +174,10 @@ stmts : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
 stmt : expr ';'                                     { $$ = new og::evaluation_node(LINE, $1); }
      | tPRINT exprs ';'                             { $$ = new og::print_node(LINE, $2); }
      | tPRINTLN exprs ';'                           { $$ = new og::print_node(LINE, $2, true); }
-     | tFOR localdecs ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-     | tFOR localdecs ';' exprs ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, $4, NULL, $7); }
-     | tFOR localdecs ';'       ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, $5, $7); }
-     | tFOR localdecs ';'       ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, NULL, $6); }
+     | tFOR fordecs   ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+     | tFOR fordecs   ';' exprs ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, $4, NULL, $7); }
+     | tFOR fordecs   ';'       ';' exprs tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, $5, $7); }
+     | tFOR fordecs   ';'       ';'       tDO stmt  { $$ = new og::for_node(LINE, $2, NULL, NULL, $6); }
      | tFOR autodec   ';' exprs ';' exprs tDO stmt  { $$ = new og::for_node(LINE, new cdk::sequence_node(LINE, $2), $4, $6, $8); }
      | tFOR autodec   ';' exprs ';'       tDO stmt  { $$ = new og::for_node(LINE, new cdk::sequence_node(LINE, $2), $4, NULL, $7); }
      | tFOR autodec   ';'       ';' exprs tDO stmt  { $$ = new og::for_node(LINE, new cdk::sequence_node(LINE, $2), NULL, $5, $7); }
