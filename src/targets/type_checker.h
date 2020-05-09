@@ -30,6 +30,11 @@ namespace og {
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
     }
 
+  protected:
+    void do_ScalarLogicalExpression(cdk::binary_operation_node * const node, int lvl);
+    void do_BooleanLogicalExpression(cdk::binary_operation_node * const node, int lvl);
+    void do_GeneralLogicalExpression(cdk::binary_operation_node * const node, int lvl);
+
   public:
     // do not edit these lines
 #define __IN_VISITOR_HEADER__
