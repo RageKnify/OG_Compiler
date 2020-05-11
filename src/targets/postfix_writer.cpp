@@ -30,7 +30,6 @@ void og::postfix_writer::do_or_node(cdk::or_node * const node, int lvl) {
   _pf.JNZ(mklbl(lbl));
   node->right()->accept(this, lvl + 2);
   _pf.OR();
-  _pf.ALIGN();
   _pf.LABEL(mklbl(lbl));
 }
 
