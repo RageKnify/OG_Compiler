@@ -28,8 +28,22 @@ void og::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
 void og::type_checker::do_and_node(cdk::and_node *const node, int lvl) {
   // EMPTY
 }
+
 void og::type_checker::do_or_node(cdk::or_node *const node, int lvl) {
-  // EMPTY
+  do_BooleanLogicalExpression(node, lvl);
+}
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_BooleanLogicalExpression(cdk::binary_operation_node * const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->left()->accept(this, lvl + 2);
+  if (node->left()->type()->name() != cdk::TYPE_INT) throw std::string("integer expression expected in binary expression");
+
+  node->right()->accept(this, lvl + 2);
+  if (node->right()->type()->name() != cdk::TYPE_INT) throw std::string("integer expression expected in binary expression");
+
+  node->type(node->left()->type());
 }
 
 //---------------------------------------------------------------------------
