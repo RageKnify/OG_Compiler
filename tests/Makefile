@@ -3,7 +3,7 @@
 #             CONFIGURE THESE VARIABLES IF NEEDED
 #---------------------------------------------------------------
 
-ROOT = ${HOME}/compiladores/root
+ROOT = $(abspath $(CURDIR))/../build
 RTS_LIB_DIR = $(ROOT)/usr/lib
 
 MAKEOPTS += ROOT=$(ROOT)
