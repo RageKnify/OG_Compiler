@@ -272,7 +272,7 @@ void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
   /* TODO: IMPLEMENT */
-  _pf.GLOBAL("_main", _pf.FUNC()); /* Using "FUNC" screws up */
+  _pf.GLOBAL("_main", _pf.FUNC());
   _pf.LABEL("_main");
   _pf.START();
 
