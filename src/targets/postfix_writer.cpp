@@ -186,21 +186,35 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
 }
 
 void og::postfix_writer::do_print_node(og::print_node * const node, int lvl) {
-#if 0
   ASSERT_SAFE_EXPRESSIONS;
-  node->argument()->accept(this, lvl); // determine the value to print
-  if (node->argument()->is_typed(cdk::TYPE_INT)) {
-    _pf.CALL("printi");
-    _pf.TRASH(4); // delete the printed value
-  } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
-    _pf.CALL("prints");
-    _pf.TRASH(4); // delete the printed value's address
-  } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
+  cdk::expression_node* argument;
+  for (size_t i = 0; i < node->arguments()->size(); ++i) {
+    argument = (cdk::expression_node*) node->arguments()->node(i);
+    argument->accept(this, lvl); // determine the value to print
+
+    if (argument->is_typed(cdk::TYPE_INT)) {
+      _functions_to_declare.insert("printi");
+      _pf.CALL("printi");
+      _pf.TRASH(4); // delete the printed value
+    } else if (argument->is_typed(cdk::TYPE_DOUBLE)) {
+      _functions_to_declare.insert("printd");
+      _pf.CALL("printd");
+      _pf.TRASH(8); // delete the printed value
+    } else if (argument->is_typed(cdk::TYPE_STRING)) {
+      _functions_to_declare.insert("prints");
+      _pf.CALL("prints");
+      _pf.TRASH(4); // delete the printed value's address
+    } else {
+      std::cerr << "ERROR: Can only print ints, doubles and strings!" << std::endl;
+      exit(1);
+    }
+
   }
-  _pf.CALL("println"); // print a newline
-#endif
+
+  if(node->newline()) {
+    _functions_to_declare.insert("println");
+    _pf.CALL("println"); // print a newline
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -277,6 +291,13 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _pf.START();
 
   node->block()->accept(this, lvl+2);
+
+  if (node->identifier() == "og") {
+    // declare external functions
+    for (std::string s: _functions_to_declare) {
+      _pf.EXTERN(s);
+    }
+  }
 }
 
 //---------------------------------------------------------------------------
