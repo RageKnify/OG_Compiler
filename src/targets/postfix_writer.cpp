@@ -266,9 +266,17 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 }
 
 void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
+  /* TODO: IMPLEMENT */
+  node->instructions()->accept(this, lvl+2);
 }
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+  /* TODO: IMPLEMENT */
+  _pf.GLOBAL("_main", ""); /* Using "FUNC" screws up */
+  _pf.LABEL("_main");
+  _pf.START();
+
+  node->block()->accept(this, lvl+2);
 }
 
 //---------------------------------------------------------------------------
@@ -290,6 +298,11 @@ void og::postfix_writer::do_nullptr_node(og::nullptr_node* const node, int lvl) 
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
+  /* TODO: IMPLEMENT */
+  _pf.INT(0);
+  _pf.STFVAL32();
+  _pf.LEAVE();
+  _pf.RET();
 }
 
 //---------------------------------------------------------------------------
