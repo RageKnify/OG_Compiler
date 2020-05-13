@@ -67,6 +67,9 @@ EXP [eE]-?[0-9]+
 <X_STRING>\\\\         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
+<X_STRING>\\n          *yylval.s += '\n';
+<X_STRING>\\t          *yylval.s += '\t';
+<X_STRING>\\r          *yylval.s += '\r';
 <X_STRING>\\([a-fA-F0-9]{2})     |
 <X_STRING>\\[a-fA-F0-9]          {
                                      char c = std::stoi(yytext+1, NULL, 16);

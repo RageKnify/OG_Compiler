@@ -241,7 +241,7 @@ void og::xml_writer::do_function_declaration_node(og::function_declaration_node 
 	os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='";
 	os() << qualifier_to_string(node->qualifier());
 	os() << "' type='" << to_string(std::shared_ptr<cdk::basic_type>(node->type()));
-	os() << "' id='" << *node->identifier();
+	os() << "' id='" << node->identifier();
 	os() << "'>" << std::endl;
 	openTag("parameters", lvl+2);
 	if (node->parameters() != NULL) {
@@ -252,7 +252,7 @@ void og::xml_writer::do_function_declaration_node(og::function_declaration_node 
 }
 
 void og::xml_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
-	os() << std::string(lvl, ' ') << "<" << node->label() << " id='" << *node->identifier();
+	os() << std::string(lvl, ' ') << "<" << node->label() << " id='" << node->identifier();
 	os() << "'>" << std::endl;
 	openTag("arguments", lvl+2);
 	if (node->arguments() != NULL) {
@@ -282,7 +282,7 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node *c
 	os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='";
 	os() << qualifier_to_string(node->qualifier());
 	os() << "' type='" << to_string(std::shared_ptr<cdk::basic_type>(node->type()));
-	os() << "' id='" << *node->identifier();
+	os() << "' id='" << node->identifier();
 	os() << "'>" << std::endl;
 	openTag("parameters", lvl+2);
 	if (node->parameters() != NULL) {

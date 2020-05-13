@@ -14,15 +14,15 @@ namespace og {
   class function_declaration_node: public cdk::basic_node {
     int _qualifier;
     cdk::basic_type *_type;
-    std::string *_identifier;
+    std::string _identifier;
     cdk::sequence_node *_parameters;
 
   public:
-    inline function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, std::string *identifier) :
+    inline function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier) :
       cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _parameters(NULL) {
     }
 
-    inline function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, std::string *identifier, cdk::sequence_node *parameters) :
+    inline function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier, cdk::sequence_node *parameters) :
       cdk::basic_node(lineno), _qualifier(qualifier), _type(type), _identifier(identifier), _parameters(parameters) {
     }
 
@@ -35,7 +35,7 @@ namespace og {
       return _type;
     }
 
-    inline std::string *identifier() {
+    const inline std::string &identifier() const {
       return _identifier;
     }
 
