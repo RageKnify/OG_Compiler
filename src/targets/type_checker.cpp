@@ -65,14 +65,25 @@ void og::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
 
 void og::type_checker::processUnaryExpression(cdk::unary_operation_node *const node, int lvl) {
   node->argument()->accept(this, lvl + 2);
-  if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in argument of unary expression");
-
-  // in Simple, expressions are always int
-  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
+  node->type(node->argument()->type());
 }
 
 void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
+  ASSERT_UNSPEC;
   processUnaryExpression(node, lvl);
+  if (! (node->argument()->is_typed(cdk::TYPE_INT) ||
+        node->argument()->is_typed(cdk::TYPE_DOUBLE)) ) {
+    throw std::string("integer or real expression expected by symmetry operator");
+  }
+}
+
+void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  processUnaryExpression(node, lvl);
+  if (! (node->argument()->is_typed(cdk::TYPE_INT) ||
+        node->argument()->is_typed(cdk::TYPE_DOUBLE)) ) {
+    throw std::string("integer or real expression expected by identity operator");
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -263,9 +274,4 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_tuple_node(og::tuple_node* const node, int lvl) {
-}
-
-//---------------------------------------------------------------------------
-
-void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) {
 }

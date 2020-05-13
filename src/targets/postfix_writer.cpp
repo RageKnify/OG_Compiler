@@ -76,6 +76,11 @@ void og::postfix_writer::do_neg_node(cdk::neg_node * const node, int lvl) {
   _pf.NEG(); // 2-complement
 }
 
+void og::postfix_writer::do_identity_node(og::identity_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  node->argument()->accept(this, lvl); // determine the value
+}
+
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
@@ -349,9 +354,4 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, i
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_tuple_node(og::tuple_node* const node, int lvl) {
-}
-
-//---------------------------------------------------------------------------
-
-void og::postfix_writer::do_identity_node(og::identity_node *const node, int lvl) {
 }
