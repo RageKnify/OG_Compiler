@@ -326,6 +326,7 @@ void og::postfix_writer::do_address_of_node(og::address_of_node * const node, in
 }
 
 void og::postfix_writer::do_nullptr_node(og::nullptr_node* const node, int lvl) {
+  _pf.INT(0);
 }
 
 //---------------------------------------------------------------------------

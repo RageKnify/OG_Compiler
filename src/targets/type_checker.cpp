@@ -290,6 +290,8 @@ void og::type_checker::do_address_of_node(og::address_of_node* const node, int l
 }
 
 void og::type_checker::do_nullptr_node(og::nullptr_node* const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->type(cdk::make_reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)));
 }
 
 //---------------------------------------------------------------------------
