@@ -19,7 +19,14 @@ void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
   // EMPTY
 }
 void og::postfix_writer::do_and_node(cdk::and_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  int lbl = ++_lbl;
+  node->left()->accept(this, lvl + 2);
+  _pf.DUP32();
+  _pf.JZ(mklbl(lbl));
+  node->right()->accept(this, lvl + 2);
+  _pf.AND();
+  _pf.LABEL(mklbl(lbl));
 }
 
 void og::postfix_writer::do_or_node(cdk::or_node * const node, int lvl) {

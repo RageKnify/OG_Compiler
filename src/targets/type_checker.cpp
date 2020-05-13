@@ -27,8 +27,9 @@ void og::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
 void og::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   // EMPTY
 }
+
 void og::type_checker::do_and_node(cdk::and_node *const node, int lvl) {
-  // EMPTY
+  do_BooleanLogicalExpression(node, lvl);
 }
 
 void og::type_checker::do_or_node(cdk::or_node *const node, int lvl) {
