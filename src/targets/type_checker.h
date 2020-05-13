@@ -26,6 +26,7 @@ namespace og {
   protected:
     void processUnaryExpression(cdk::unary_operation_node *const node, int lvl);
     void processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    void processAdditionSubtraction(cdk::binary_operation_node *const node, int lvl);
     template<typename T>
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
     }

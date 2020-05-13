@@ -1,4 +1,5 @@
 #include <string>
+#include <sstream>
 #include "targets/type_checker.h"
 #include "ast/all.h"  // automatically generated
 #include <cdk/types/primitive_type.h>
@@ -101,11 +102,46 @@ void og::type_checker::processBinaryExpression(cdk::binary_operation_node *const
   node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
 }
 
+void og::type_checker::processAdditionSubtraction(cdk::binary_operation_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
+
+  if ((node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
+      (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_POINTER)) ||
+      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER))) {
+        std::ostringstream os;
+        os << "wrong operand types for binary expression: ";
+        os << node->left()->type()->name() << " and ";
+        os << node->right()->type()->name();
+        throw os.str();
+  }
+
+  if (node->left()->is_typed(cdk::TYPE_DOUBLE)) {
+    node->type(node->left()->type());
+    return;
+  } else if (node->right()->is_typed(cdk::TYPE_DOUBLE)) {
+    node->type(node->right()->type());
+    return;
+  }
+
+  if (node->left()->is_typed(cdk::TYPE_POINTER)) {
+    node->type(node->left()->type());
+    return;
+  } else if (node->right()->is_typed(cdk::TYPE_POINTER)) {
+    node->type(node->right()->type());
+    return;
+  }
+
+  // TYPE_INT
+  node->type(node->left()->type());
+}
+
 void og::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processAdditionSubtraction(node, lvl);
 }
 void og::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processAdditionSubtraction(node, lvl);
 }
 void og::type_checker::do_mul_node(cdk::mul_node *const node, int lvl) {
   processBinaryExpression(node, lvl);
