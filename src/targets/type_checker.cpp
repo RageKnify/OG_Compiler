@@ -107,7 +107,9 @@ void og::type_checker::processAdditionSubtraction(cdk::binary_operation_node *co
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if ((node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
+  if (!(node->left()->is_typed(cdk::TYPE_INT)  || node->left()->is_typed(cdk::TYPE_DOUBLE)  || node->left()->is_typed(cdk::TYPE_POINTER))  ||
+      !(node->right()->is_typed(cdk::TYPE_INT) || node->right()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_POINTER)) ||
+      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
       (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_POINTER)) ||
       (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER))) {
         std::ostringstream os;
