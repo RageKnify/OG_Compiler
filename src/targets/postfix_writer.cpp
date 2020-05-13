@@ -13,7 +13,7 @@ void og::postfix_writer::do_data_node(cdk::data_node * const node, int lvl) {
   // EMPTY
 }
 void og::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
-  // EMPTY
+  _pf.DOUBLE(node->value());
 }
 void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
   // EMPTY

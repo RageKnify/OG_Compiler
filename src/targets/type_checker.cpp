@@ -22,7 +22,8 @@ void og::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
   // EMPTY
 }
 void og::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
-  // EMPTY
+  ASSERT_UNSPEC;
+  node->type(cdk::make_primitive_type(8, cdk::TYPE_DOUBLE));
 }
 void og::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   // EMPTY
