@@ -90,24 +90,24 @@ void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) 
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::processBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
-  ASSERT_UNSPEC;
-  node->left()->accept(this, lvl + 2);
-  if (!node->left()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in left argument of binary expression");
-
-  node->right()->accept(this, lvl + 2);
-  if (!node->right()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in right argument of binary expression");
-
-  // in Simple, expressions are always int
-  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
-}
-
 void og::type_checker::binaryOperationTypeError(cdk::binary_operation_node *const node) {
   std::ostringstream os;
   os << "wrong operand types for binary expression: ";
   os << cdk::to_string(node->left()->type()) << " and ";
   os << cdk::to_string(node->right()->type());
   throw os.str();
+}
+
+void og::type_checker::processIntegerBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
+
+  if (!(node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))) {
+    binaryOperationTypeError(node);
+  }
+
+  node->type(node->left()->type());
 }
 
 void og::type_checker::processAdditionSubtraction(cdk::binary_operation_node *const node, int lvl) {
@@ -149,10 +149,8 @@ void og::type_checker::processMultiplicationDivision(cdk::binary_operation_node 
 
   if (node->left()->is_typed(cdk::TYPE_DOUBLE)) {
     node->type(node->left()->type());
-    return;
   } else if (node->right()->is_typed(cdk::TYPE_DOUBLE)) {
     node->type(node->right()->type());
-    return;
   } else {
     // TYPE_INT
     node->type(node->left()->type());
@@ -172,25 +170,33 @@ void og::type_checker::do_div_node(cdk::div_node *const node, int lvl) {
   processMultiplicationDivision(node, lvl);
 }
 void og::type_checker::do_mod_node(cdk::mod_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  ASSERT_UNSPEC;
+  node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
+
+  if (!(node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))) {
+    binaryOperationTypeError(node);
+  }
+
+  node->type(node->left()->type());
 }
 void og::type_checker::do_lt_node(cdk::lt_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntegerBinaryExpression(node, lvl);
 }
 void og::type_checker::do_le_node(cdk::le_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntegerBinaryExpression(node, lvl);
 }
 void og::type_checker::do_ge_node(cdk::ge_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntegerBinaryExpression(node, lvl);
 }
 void og::type_checker::do_gt_node(cdk::gt_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntegerBinaryExpression(node, lvl);
 }
 void og::type_checker::do_ne_node(cdk::ne_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntegerBinaryExpression(node, lvl);
 }
 void og::type_checker::do_eq_node(cdk::eq_node *const node, int lvl) {
-  processBinaryExpression(node, lvl);
+  processIntegerBinaryExpression(node, lvl);
 }
 
 //---------------------------------------------------------------------------
