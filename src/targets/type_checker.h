@@ -28,6 +28,7 @@ namespace og {
     void processIntegerBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processMultiplicationDivision(cdk::binary_operation_node *const node, int lvl);
     void processComparison(cdk::binary_operation_node *const node, int lvl);
+    void processEquality(cdk::binary_operation_node *const node, int lvl);
     template<typename T>
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
     }
