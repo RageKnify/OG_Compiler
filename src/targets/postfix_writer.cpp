@@ -101,8 +101,17 @@ void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
 void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl);
+  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->left()->is_typed(cdk::TYPE_DOUBLE))
+    _pf.I2D();
+  
   node->right()->accept(this, lvl);
-  _pf.SUB();
+  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->right()->is_typed(cdk::TYPE_DOUBLE))
+    _pf.I2D();
+  
+  if (node->is_typed(cdk::TYPE_DOUBLE))
+    _pf.DSUB();
+  else
+    _pf.SUB();
 }
 void og::postfix_writer::do_mul_node(cdk::mul_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
