@@ -211,6 +211,16 @@ void og::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
   } else if (node->right()->is_typed(cdk::TYPE_DOUBLE)) {
     node->type(node->right()->type());
   } else if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) {
+    auto l = cdk::reference_type_cast(node->left()->type())->referenced();
+    auto r = cdk::reference_type_cast(node->right()->type())->referenced();
+
+    while (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER) {
+      l = cdk::reference_type_cast(l)->referenced();
+      r = cdk::reference_type_cast(r)->referenced();
+    }
+    if (l != r)
+      binaryOperationTypeError(node);
+
     node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
   } else if (node->left()->is_typed(cdk::TYPE_POINTER)) {
     node->type(node->left()->type());
