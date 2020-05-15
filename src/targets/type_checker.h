@@ -25,10 +25,14 @@ namespace og {
 
   protected:
     void processUnaryExpression(cdk::unary_operation_node *const node, int lvl);
-    void processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    void processIntegerBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    void processMultiplicationDivision(cdk::binary_operation_node *const node, int lvl);
+    void processComparison(cdk::binary_operation_node *const node, int lvl);
+    void processEquality(cdk::binary_operation_node *const node, int lvl);
     template<typename T>
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
     }
+    void binaryOperationTypeError(cdk::binary_operation_node *const node);
 
   protected:
     void do_ScalarLogicalExpression(cdk::binary_operation_node * const node, int lvl);
