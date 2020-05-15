@@ -4,6 +4,8 @@
 #include "targets/postfix_writer.h"
 #include "ast/all.h"  // all.h is automatically generated
 
+#include "og_parser.tab.h"
+
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_nil_node(cdk::nil_node * const node, int lvl) {
@@ -434,12 +436,31 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _pf.LABEL("_main");
   _pf.START();
 
+  _in_function = true;
+
   node->block()->accept(this, lvl+2);
 
-  if (node->identifier() == "og") {
+  _in_function = false;
+
+  if (node->identifier() == "og") { // TODO: move somewhere else. This isn't guaranteed to capture everything
     // declare external functions
     for (std::string s: _functions_to_declare) {
       _pf.EXTERN(s);
+    }
+
+    // allocate uninitialized variables
+    if (_uninitialized_vars.size() > 0) {
+      _pf.BSS();
+      _pf.ALIGN();
+      for (std::string s : _uninitialized_vars)
+      {
+        auto symbol = _symtab.find(s);
+        if (symbol->qualifier() == tPUBLIC)
+          _pf.GLOBAL(symbol->name(), _pf.OBJ());
+
+        _pf.LABEL(symbol->name());
+        _pf.SALLOC(symbol->type()->size());
+      }
     }
   }
 }
@@ -474,6 +495,57 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  if (_in_function) {
+    /* TODO: local variables */
+  } else {
+    /* TODO: must handle case in which many symbols are created */
+    if (new_symbol()) {
+      _uninitialized_vars.insert(new_symbol()->name());
+      reset_new_symbol();
+    }
+
+    if (node->initializer()) {
+      if (!node->is_auto()) {
+        std::string id = *node->identifiers()->at(0);
+        _uninitialized_vars.erase(id);
+        if (node->initializer()->is_typed(cdk::TYPE_STRING)) {
+          int lbl;
+          cdk::string_node *s = dynamic_cast<cdk::string_node*>(node->initializer());
+          _pf.RODATA();
+          _pf.ALIGN();
+          _pf.LABEL(mklbl(lbl = ++_lbl));
+          _pf.SSTRING(s->value());
+          _pf.DATA();
+          _pf.LABEL(id);
+          _pf.SADDR(mklbl(lbl));
+        } else if (node->initializer()->is_typed(cdk::TYPE_DOUBLE)) {
+          cdk::double_node *d = dynamic_cast<cdk::double_node*>(node->initializer());
+          _pf.DATA();
+          _pf.ALIGN();
+          _pf.LABEL(id);
+          _pf.SDOUBLE(d->value());
+        } else if (node->initializer()->is_typed(cdk::TYPE_POINTER)) {
+          _pf.DATA();
+          _pf.ALIGN();
+          _pf.LABEL(id);
+          _pf.SINT(0); // only nullptr literal
+        } else if (node->initializer()->is_typed(cdk::TYPE_INT)) {
+          cdk::integer_node *i = dynamic_cast<cdk::integer_node*>(node->initializer());
+          _pf.DATA();
+          _pf.ALIGN();
+          _pf.LABEL(id);
+          _pf.SINT(i->value());
+        }
+
+        _pf.TEXT();
+      } else {
+        /* TODO: tuple */
+      }
+
+      _pf.TEXT();
+    }
+  }
 }
 
 //---------------------------------------------------------------------------

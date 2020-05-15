@@ -18,6 +18,7 @@ namespace og {
     cdk::basic_postfix_emitter &_pf;
     int _lbl;
     std::set<std::string> _functions_to_declare;
+    std::set<std::string> _uninitialized_vars;
 
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
