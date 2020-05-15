@@ -22,12 +22,19 @@ void og::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
 void og::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
   // EMPTY
 }
+
 void og::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->type(cdk::make_primitive_type(8, cdk::TYPE_DOUBLE));
 }
+
 void og::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
-  // EMPTY
+  ASSERT_UNSPEC;
+
+  node->argument()->accept(this, lvl + 2);
+  if (node->argument()->type()->name() != cdk::TYPE_INT) throw std::string("integer expression expected for not operator");
+
+  node->type(node->argument()->type());
 }
 
 void og::type_checker::do_and_node(cdk::and_node *const node, int lvl) {
