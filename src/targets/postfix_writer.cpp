@@ -344,8 +344,7 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
   } else if (node->argument()->is_typed(cdk::TYPE_POINTER)) {
     _pf.TRASH(4); // delete the evaluated value
   } else if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
-    auto type = std::dynamic_pointer_cast<cdk::structured_type>(node->argument()->type());
-    _pf.TRASH(type->size()); // delete the evaluated value
+    _pf.TRASH(node->argument()->type()->size()); // delete the evaluated value
   } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
     // nothing to delete
   } else {
