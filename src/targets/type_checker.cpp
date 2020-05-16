@@ -358,6 +358,9 @@ void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
 }
 
 void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->tuple()->accept(this, lvl + 4);
+  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
 }
 
 void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
