@@ -432,14 +432,14 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         throw std::string("Redeclaration of variable with different qualifier");
       }
 
-      if (node->initializer()) node->initializer()->accept(this, lvl + 2);
+      if (node->initializer()) {
+        node->initializer()->accept(this, lvl + 2);
 
-      if (node->initializer() || node->qualifier() == tREQUIRE) {
         if (symbol->defined()) {
           std::ostringstream oss;
           oss << "Redefinition of variable '" << symbol->name() << "'";
           throw oss.str();
-        } else if (node->initializer() && !deep_type_check(symbol->type(), node->initializer()->type())) {
+        } else if (!deep_type_check(symbol->type(), node->initializer()->type())) {
           std::ostringstream oss;
           oss << "Wrong types for definition: ";
           oss << cdk::to_string(symbol->type()) << " and ";
