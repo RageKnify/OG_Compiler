@@ -337,8 +337,16 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
   node->argument()->accept(this, lvl); // determine the value
   if (node->argument()->is_typed(cdk::TYPE_INT)) {
     _pf.TRASH(4); // delete the evaluated value
+  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
+    _pf.TRASH(8); // delete the evaluated value
   } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
     _pf.TRASH(4); // delete the evaluated value's address
+  } else if (node->argument()->is_typed(cdk::TYPE_POINTER)) {
+    _pf.TRASH(4); // delete the evaluated value
+  } else if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
+    _pf.TRASH(node->argument()->type()->size()); // delete the evaluated value
+  } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
+    // nothing to delete
   } else {
     std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
     exit(1);
