@@ -15,9 +15,25 @@ void og::postfix_writer::do_data_node(cdk::data_node * const node, int lvl) {
 void og::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
   _pf.DOUBLE(node->value());
 }
+
 void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  int zero = ++_lbl;
+  int end = ++_lbl;
+  node->argument()->accept(this, lvl + 2);
+  _pf.JZ(mklbl(zero));
+
+  // If it was not 0 it becomes 0
+  _pf.INT(0);
+  _pf.JMP(mklbl(end));
+
+  // If it was 0 it becomes 1
+  _pf.LABEL(mklbl(zero));
+  _pf.INT(1);
+
+  _pf.LABEL(mklbl(end));
 }
+
 void og::postfix_writer::do_and_node(cdk::and_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int lbl = ++_lbl;

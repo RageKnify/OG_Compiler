@@ -114,7 +114,7 @@ EXP [eE]-?[0-9]+
     }
 }
 
-[-()<>=+*/%;,{}.@?[\]]  return *yytext;
+[-()<>=+~*/%;,{}.@?[\]]  return *yytext;
 
 [ \t\n\r]+             ; /* ignore whitespace */
 
