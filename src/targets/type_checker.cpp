@@ -474,7 +474,11 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
 bool og::type_checker::assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
   return deep_type_check(l, r) ||
          (l->name() == cdk::TYPE_DOUBLE && assignment_compatible(cdk::make_primitive_type(4, cdk::TYPE_INT), r)) ||
-         (l->name() == cdk::TYPE_INT && r->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(r)->referenced()->name() == cdk::TYPE_VOID);
+         (l->name() == cdk::TYPE_INT && r->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(r)->referenced()->name() == cdk::TYPE_VOID) ||
+         (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(r)->referenced()->name() == cdk::TYPE_VOID) ||
+         (r->name() == cdk::TYPE_POINTER && l->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(l)->referenced()->name() == cdk::TYPE_VOID) ||
+         (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER
+            && assignment_compatible(cdk::reference_type_cast(l)->referenced(), cdk::reference_type_cast(r)->referenced()));
 }
 //---------------------------------------------------------------------------
 
