@@ -42,6 +42,7 @@ namespace og {
 
   private:
     bool deep_type_check(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r);
+    bool assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r);
     void check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
     void check_variable_definition(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
 

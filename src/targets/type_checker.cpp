@@ -461,7 +461,7 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
     oss << "Redefinition of variable '" << symbol->name() << "'";
     throw oss.str();
   }
-  else if (!deep_type_check(symbol->type(), node->initializer()->type()))
+  else if (!assignment_compatible(symbol->type(), node->initializer()->type()))
   {
     std::ostringstream oss;
     oss << "Wrong types for definition: ";
@@ -469,6 +469,12 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
     oss << cdk::to_string(node->initializer()->type());
     throw oss.str();
   }
+}
+
+bool og::type_checker::assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
+  return l == r ||
+         (l->name() == cdk::TYPE_DOUBLE && assignment_compatible(cdk::make_primitive_type(4, cdk::TYPE_INT), r)) ||
+         (l->name() == cdk::TYPE_INT && r->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(r)->referenced()->name() == cdk::TYPE_VOID);
 }
 //---------------------------------------------------------------------------
 
