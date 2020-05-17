@@ -418,36 +418,14 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         symbol->qualifier(node->qualifier());
         _symtab.insert(symbol->name(), symbol);
         _parent->set_new_symbol(symbol);
-      } else if (symbol->is_function()) {
-        std::ostringstream oss;
-        oss << "Redeclaration of function '" << symbol->name() << "' as variable";
-        throw oss.str();
-      } else if (!deep_type_check(symbol->type(), node->varType())) {
-        std::ostringstream oss;
-        oss << "Redeclaration of variable '" << symbol->name() << "' with different types: ";
-        oss << cdk::to_string(symbol->type()) << " and ";
-        oss << cdk::to_string(node->varType());
-        throw oss.str();
-      } else if (symbol->qualifier() != node->qualifier()) {
-        throw std::string("Redeclaration of variable with different qualifier");
+      } else {
+        check_variable_declaration(node, symbol);
       }
 
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);
-
-        if (symbol->defined()) {
-          std::ostringstream oss;
-          oss << "Redefinition of variable '" << symbol->name() << "'";
-          throw oss.str();
-        } else if (!deep_type_check(symbol->type(), node->initializer()->type())) {
-          std::ostringstream oss;
-          oss << "Wrong types for definition: ";
-          oss << cdk::to_string(symbol->type()) << " and ";
-          oss << cdk::to_string(node->initializer()->type());
-          throw oss.str();
-        } else {
-          symbol->defined(true);
-        }
+        check_variable_definition(node, symbol);
+        symbol->defined(true);
       }
     } else {
       /* TODO: tuple declaration */
@@ -455,6 +433,43 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
   }
 }
 
+void og::type_checker::check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol) {
+  if (symbol->is_function())
+  {
+    std::ostringstream oss;
+    oss << "Redeclaration of function '" << symbol->name() << "' as variable";
+    throw oss.str();
+  }
+  else if (!deep_type_check(symbol->type(), node->varType()))
+  {
+    std::ostringstream oss;
+    oss << "Redeclaration of variable '" << symbol->name() << "' with different types: ";
+    oss << cdk::to_string(symbol->type()) << " and ";
+    oss << cdk::to_string(node->varType());
+    throw oss.str();
+  }
+  else if (symbol->qualifier() != node->qualifier())
+  {
+    throw std::string("Redeclaration of variable with different qualifier");
+  }
+}
+
+void og::type_checker::check_variable_definition(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol) {
+  if (symbol->defined())
+  {
+    std::ostringstream oss;
+    oss << "Redefinition of variable '" << symbol->name() << "'";
+    throw oss.str();
+  }
+  else if (!deep_type_check(symbol->type(), node->initializer()->type()))
+  {
+    std::ostringstream oss;
+    oss << "Wrong types for definition: ";
+    oss << cdk::to_string(symbol->type()) << " and ";
+    oss << cdk::to_string(node->initializer()->type());
+    throw oss.str();
+  }
+}
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_pointer_index_node(og::pointer_index_node* const node, int lvl) {

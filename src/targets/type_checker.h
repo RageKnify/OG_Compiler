@@ -12,11 +12,11 @@ namespace og {
     cdk::symbol_table<og::symbol> &_symtab;
 
     basic_ast_visitor *_parent;
-    bool _in_function;
 
   public:
     type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab, basic_ast_visitor *parent, bool in_function) :
-        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent), _in_function(in_function) {
+        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent) {
+          _in_function = in_function;
     }
 
   public:
@@ -42,6 +42,8 @@ namespace og {
 
   private:
     bool deep_type_check(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r);
+    void check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
+    void check_variable_definition(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
 
   public:
     // do not edit these lines
