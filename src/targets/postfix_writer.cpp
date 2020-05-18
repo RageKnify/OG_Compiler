@@ -464,7 +464,12 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   frame_size_calculator lsc(_compiler, _symtab);
   node->accept(&lsc, lvl);
-  _pf.ENTER(lsc.localsize());
+  int local_size = lsc.localsize();
+  if (local_size) {
+    _pf.ENTER(local_size);
+  } else {
+    _pf.START();
+  }
 
   _in_function = true;
 
