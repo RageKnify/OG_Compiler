@@ -11,7 +11,7 @@
 //---------------------------------------------------------------------------
 
 bool og::type_checker::deep_type_check(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
-  while (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER)
+  while (is_typed(l, cdk::TYPE_POINTER) && is_typed(r, cdk::TYPE_POINTER))
   {
     l = referenced(l);
     r = referenced(r);
@@ -32,6 +32,14 @@ std::shared_ptr<cdk::basic_type> og::referenced(std::shared_ptr<cdk::basic_type>
     type = cdk::structured_type_cast(type)->component(0);
   }
   return cdk::reference_type_cast(type)->referenced();
+}
+
+bool og::is_void_pointer(std::shared_ptr<cdk::basic_type> type) {
+  if (!is_typed(type, cdk::TYPE_POINTER)) return false;
+  while (is_typed(type, cdk::TYPE_POINTER)) {
+    type = referenced(type);
+  }
+  return is_typed(type, cdk::TYPE_VOID);
 }
 
 //---------------------------------------------------------------------------
@@ -498,11 +506,9 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
 bool og::type_checker::assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
   return deep_type_check(l, r) ||
          (l->name() == cdk::TYPE_DOUBLE && assignment_compatible(cdk::make_primitive_type(4, cdk::TYPE_INT), r)) ||
-         (l->name() == cdk::TYPE_INT && r->name() == cdk::TYPE_POINTER && referenced(r)->name() == cdk::TYPE_VOID) ||
-         (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER && referenced(r)->name() == cdk::TYPE_VOID) ||
-         (r->name() == cdk::TYPE_POINTER && l->name() == cdk::TYPE_POINTER && referenced(l)->name() == cdk::TYPE_VOID) ||
-         (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER
-            && assignment_compatible(referenced(l), referenced(r)));
+         (l->name() == cdk::TYPE_INT && is_void_pointer(r)) ||
+         (l->name() == cdk::TYPE_POINTER && is_void_pointer(r)) ||
+         (r->name() == cdk::TYPE_POINTER && is_void_pointer(l));
 }
 //---------------------------------------------------------------------------
 
