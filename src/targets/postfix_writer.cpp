@@ -1,5 +1,6 @@
 #include <string>
 #include <sstream>
+#include "targets/frame_size_calculator.h"
 #include "targets/type_checker.h"
 #include "targets/postfix_writer.h"
 #include "ast/all.h"  // all.h is automatically generated
@@ -460,13 +461,19 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   /* TODO: IMPLEMENT */
   _pf.GLOBAL("_main", _pf.FUNC());
   _pf.LABEL("_main");
-  _pf.START();
+
+  frame_size_calculator lsc(_compiler, _symtab);
+  node->accept(&lsc, lvl);
+  _pf.ENTER(lsc.localsize());
 
   _in_function = true;
 
   node->block()->accept(this, lvl+2);
 
   _in_function = false;
+
+  _pf.LEAVE();
+  _pf.RET();
 
   if (node->identifier() == "og") { // TODO: move somewhere else. This isn't guaranteed to capture everything
     // declare external functions
