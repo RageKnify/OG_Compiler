@@ -13,9 +13,12 @@ namespace og {
 
     basic_ast_visitor *_parent;
 
+    int &_offset;
+
   public:
-    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab, basic_ast_visitor *parent, bool in_function) :
-        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent) {
+    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
+    basic_ast_visitor *parent, bool in_function, int &offset) :
+        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent), _offset(offset) {
           _in_function = in_function;
     }
 
@@ -65,9 +68,9 @@ namespace og {
 //     HELPER MACRO FOR TYPE CHECKING
 //---------------------------------------------------------------------------
 
-#define CHECK_TYPES(compiler, symtab, node, in_function) { \
+#define CHECK_TYPES(compiler, symtab, node, in_function, offset) { \
   try { \
-    og::type_checker checker(compiler, symtab, this, in_function); \
+    og::type_checker checker(compiler, symtab, this, in_function, offset); \
     (node)->accept(&checker, 0); \
   } \
   catch (const std::string &problem) { \
@@ -76,6 +79,6 @@ namespace og {
   } \
 }
 
-#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node, _in_function)
+#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node, _in_function, _offset)
 
 #endif

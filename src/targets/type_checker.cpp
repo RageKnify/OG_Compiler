@@ -435,11 +435,29 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+  const auto &ids = node->identifiers();
   if (_in_function) {
-    /* TODO: local variable */
-  } else {
-    const auto &ids = node->identifiers();
+    if (!node->is_auto()) {
+      std::string id = *ids->at(0);
 
+      std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(node->varType(), id);
+      symbol->global(false);
+      symbol->qualifier(node->qualifier());
+      if(!_symtab.insert(symbol->name(), symbol))
+        throw std::string("Redeclaration of local variable: ") + id;
+      _parent->set_new_symbol(symbol);
+
+      _offset += node->varType()->size();
+      symbol->offset(-_offset);
+
+      if (node->initializer()) {
+        node->initializer()->accept(this, lvl + 2);
+        check_variable_definition(node, symbol);
+      }
+    } else {
+      /* TODO: tuple declaration */
+    }
+  } else {
     if (!node->is_auto()) {
       std::string id = *ids->at(0);
       std::shared_ptr<og::symbol> symbol = _symtab.find(id);
