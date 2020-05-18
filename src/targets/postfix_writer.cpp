@@ -568,66 +568,66 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         /* TODO: tuple */
       }
     }
-    else
+  }
+  else
+  {
+    /* TODO: must handle case in which many symbols are created */
+    if (new_symbol())
     {
-      /* TODO: must handle case in which many symbols are created */
-      if (new_symbol())
-      {
-        _uninitialized_vars.insert(new_symbol()->name());
-        reset_new_symbol();
-      }
+      _uninitialized_vars.insert(new_symbol()->name());
+      reset_new_symbol();
+    }
 
-      if (node->initializer())
+    if (node->initializer())
+    {
+      if (!node->is_auto())
       {
-        if (!node->is_auto())
+        std::string id = *node->identifiers()->at(0);
+        _uninitialized_vars.erase(id);
+        if (is_typed(node->initializer()->type(), cdk::TYPE_STRING))
         {
-          std::string id = *node->identifiers()->at(0);
-          _uninitialized_vars.erase(id);
-          if (is_typed(node->initializer()->type(), cdk::TYPE_STRING))
-          {
-            int lbl;
-            cdk::string_node *s = dynamic_cast<cdk::string_node *>(node->initializer());
-            _pf.RODATA();
-            _pf.ALIGN();
-            _pf.LABEL(mklbl(lbl = ++_lbl));
-            _pf.SSTRING(s->value());
-            _pf.DATA();
-            _pf.LABEL(id);
-            _pf.SADDR(mklbl(lbl));
-          }
-          else if (is_typed(node->initializer()->type(), cdk::TYPE_DOUBLE))
-          {
-            cdk::double_node *d = dynamic_cast<cdk::double_node *>(node->initializer());
-            _pf.DATA();
-            _pf.ALIGN();
-            _pf.LABEL(id);
-            _pf.SDOUBLE(d->value());
-          }
-          else if (is_typed(node->initializer()->type(), cdk::TYPE_POINTER))
-          {
-            _pf.DATA();
-            _pf.ALIGN();
-            _pf.LABEL(id);
-            _pf.SINT(0); // only nullptr literal
-          }
-          else if (is_typed(node->initializer()->type(), cdk::TYPE_INT))
-          {
-            cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(node->initializer());
-            _pf.DATA();
-            _pf.ALIGN();
-            _pf.LABEL(id);
-            _pf.SINT(i->value());
-          }
-
-          _pf.TEXT();
+          int lbl;
+          cdk::string_node *s = dynamic_cast<cdk::string_node *>(node->initializer());
+          _pf.RODATA();
+          _pf.ALIGN();
+          _pf.LABEL(mklbl(lbl = ++_lbl));
+          _pf.SSTRING(s->value());
+          _pf.DATA();
+          _pf.LABEL(id);
+          _pf.SADDR(mklbl(lbl));
         }
-        else
+        else if (is_typed(node->initializer()->type(), cdk::TYPE_DOUBLE))
         {
-          /* TODO: tuple */
+          cdk::double_node *d = dynamic_cast<cdk::double_node *>(node->initializer());
+          _pf.DATA();
+          _pf.ALIGN();
+          _pf.LABEL(id);
+          _pf.SDOUBLE(d->value());
+        }
+        else if (is_typed(node->initializer()->type(), cdk::TYPE_POINTER))
+        {
+          _pf.DATA();
+          _pf.ALIGN();
+          _pf.LABEL(id);
+          _pf.SINT(0); // only nullptr literal
+        }
+        else if (is_typed(node->initializer()->type(), cdk::TYPE_INT))
+        {
+          cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(node->initializer());
+          _pf.DATA();
+          _pf.ALIGN();
+          _pf.LABEL(id);
+          _pf.SINT(i->value());
         }
 
         _pf.TEXT();
       }
+      else
+      {
+        /* TODO: tuple */
+      }
+
+      _pf.TEXT();
     }
   }
 }
