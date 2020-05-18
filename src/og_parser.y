@@ -51,8 +51,8 @@
 %type <s> string
 %type <node> stmt vardec funcdec param fordec blockdec ifcontent dec autodec
 %type <block_node> block
-%type <sequence> stmts exprs params fordecs blockdecs decs
-%type <expression> expr
+%type <sequence> stmts exprs params fordecs blockdecs decs literals
+%type <expression> expr literal
 %type <lvalue> lval
 %type <type> type
 %type <identifiers> identifiers
@@ -72,14 +72,14 @@ dec : vardec ';'    { $$ = $1; }
     | funcdec       { $$ = $1; }
     ;
 
-vardec :          type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
-       |          type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
-       | tPUBLIC  type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), NULL); }
-       | tPUBLIC  type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), $5); }
-       | tREQUIRE type  tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), NULL); }
-       | tREQUIRE type  tIDENTIFIER '=' expr   { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), $5); }
-       |          tAUTO identifiers '=' exprs  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
-       | tPUBLIC  tAUTO identifiers '=' exprs  { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $3, new og::tuple_node(LINE, $5)); }
+vardec :          type  tIDENTIFIER               { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), NULL); }
+       |          type  tIDENTIFIER '=' literal   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, new std::vector<std::string*>({$2}), $4); }
+       | tPUBLIC  type  tIDENTIFIER               { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), NULL); }
+       | tPUBLIC  type  tIDENTIFIER '=' literal   { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), $5); }
+       | tREQUIRE type  tIDENTIFIER               { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), NULL); }
+       | tREQUIRE type  tIDENTIFIER '=' literal   { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), $5); }
+       |          tAUTO identifiers '=' literals  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
+       | tPUBLIC  tAUTO identifiers '=' literals  { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $3, new og::tuple_node(LINE, $5)); }
        ;
 
 funcdec :          type       tIDENTIFIER '(' ')'              { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
@@ -203,10 +203,7 @@ ifcontent : expr tTHEN stmt %prec tIFX          { $$ = new og::if_node(LINE, $1,
           | expr tTHEN stmt tELSE stmt          { $$ = new og::if_else_node(LINE, $1, $3, $5); }
           ;
 
-expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
-     | tREAL                        { $$ = new cdk::double_node(LINE, $1); }
-     | tNULLPTR                     { $$ = new og::nullptr_node(LINE); }
-     | string                       { $$ = new cdk::string_node(LINE, $1); }
+expr : literal                      { $$ = $1; }
      | '-' expr %prec tUNARY        { $$ = new cdk::neg_node(LINE, $2); }
      | '+' expr %prec tUNARY        { $$ = new og::identity_node(LINE, $2); }
      | lval '?'                     { $$ = new og::address_of_node(LINE, $1); }
@@ -233,6 +230,16 @@ expr : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
      | tIDENTIFIER '(' ')'          { $$ = new og::function_call_node(LINE, *$1); delete $1; }
      | tIDENTIFIER '(' exprs ')'    { $$ = new og::function_call_node(LINE, *$1, $3); delete $1; }
      ;
+
+literal : tINTEGER                     { $$ = new cdk::integer_node(LINE, $1); }
+        | tREAL                        { $$ = new cdk::double_node(LINE, $1); }
+        | tNULLPTR                     { $$ = new og::nullptr_node(LINE); }
+        | string                       { $$ = new cdk::string_node(LINE, $1); }
+        ;
+
+literals : literal                { $$ = new cdk::sequence_node(LINE, $1); }
+         | literals ',' literal   { $$ = new cdk::sequence_node(LINE, $3, $1); }
+         ;
 
 string : string tSTRING         { $1->append(*$2); $$ = $1; delete $2; }
        | tSTRING                { $$ = $1; }

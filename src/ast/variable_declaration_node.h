@@ -12,7 +12,7 @@ namespace og {
 		typedef std::vector<std::string*> identifiers_type;
 
 		int _qualifier;
-		cdk::basic_type* _varType;
+		std::shared_ptr<cdk::basic_type> _varType;
 		identifiers_type* _identifiers;
 		cdk::expression_node* _initializer;
 
@@ -26,7 +26,7 @@ namespace og {
 		int qualifier() {
 			return _qualifier;
 		}
-		cdk::basic_type* varType() {
+		std::shared_ptr<cdk::basic_type> varType() {
 			return _varType;
 		}
 		identifiers_type* identifiers() {
@@ -34,6 +34,9 @@ namespace og {
 		}
 		cdk::expression_node* initializer() {
 			return _initializer;
+		}
+		bool is_auto() {
+			return _varType->name() == cdk::TYPE_UNSPEC;
 		}
 	public:
 		void accept(basic_ast_visitor* sp, int level) {

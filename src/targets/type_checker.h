@@ -14,8 +14,9 @@ namespace og {
     basic_ast_visitor *_parent;
 
   public:
-    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab, basic_ast_visitor *parent) :
+    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab, basic_ast_visitor *parent, bool in_function) :
         basic_ast_visitor(compiler), _symtab(symtab), _parent(parent) {
+          _in_function = in_function;
     }
 
   public:
@@ -39,6 +40,12 @@ namespace og {
     void do_BooleanLogicalExpression(cdk::binary_operation_node * const node, int lvl);
     void do_GeneralLogicalExpression(cdk::binary_operation_node * const node, int lvl);
 
+  private:
+    bool deep_type_check(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r);
+    bool assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r);
+    void check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
+    void check_variable_definition(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
+
   public:
     // do not edit these lines
 #define __IN_VISITOR_HEADER__
@@ -48,15 +55,19 @@ namespace og {
 
   };
 
+  bool is_typed(std::shared_ptr<cdk::basic_type> type, cdk::typename_type name);
+  std::shared_ptr<cdk::basic_type> referenced(std::shared_ptr<cdk::basic_type> type);
+  bool is_void_pointer(std::shared_ptr<cdk::basic_type> type);
+
 } // og
 
 //---------------------------------------------------------------------------
 //     HELPER MACRO FOR TYPE CHECKING
 //---------------------------------------------------------------------------
 
-#define CHECK_TYPES(compiler, symtab, node) { \
+#define CHECK_TYPES(compiler, symtab, node, in_function) { \
   try { \
-    og::type_checker checker(compiler, symtab, this); \
+    og::type_checker checker(compiler, symtab, this, in_function); \
     (node)->accept(&checker, 0); \
   } \
   catch (const std::string &problem) { \
@@ -65,6 +76,6 @@ namespace og {
   } \
 }
 
-#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node)
+#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node, _in_function)
 
 #endif
