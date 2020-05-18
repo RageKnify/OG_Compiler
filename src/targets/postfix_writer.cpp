@@ -453,8 +453,10 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 }
 
 void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
-  /* TODO: IMPLEMENT */
-  node->instructions()->accept(this, lvl+2);
+  _symtab.push();
+  if (node->declarations()) node->declarations()->accept(this, lvl+2);
+  if (node->instructions()) node->instructions()->accept(this, lvl+2);
+  _symtab.pop();
 }
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
