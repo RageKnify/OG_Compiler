@@ -14,13 +14,10 @@ src/$(LANGUAGE): build-cdk build-rts .PHONY
 	#$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
 	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h all
 
-examples: $(LANGUAGE) .PHONY
-	$(MAKE) -C examples $(MAKEOPTS) all
-
 xml: $(LANGUAGE) .PHONY
 	$(MAKE) -C tests $(MAKEOPTS) xml
 
-test: examples .PHONY
+test: .PHONY
 	$(MAKE) -C tests $(MAKEOPTS) test
 
 clean: .PHONY
@@ -29,7 +26,6 @@ clean: .PHONY
 	$(MAKE) -C librts $(MAKEOPTS) clean
 	$(MAKE) -C libcdk $(MAKEOPTS) clean
 	$(MAKE) -C src $(MAKEOPTS) clean
-	$(MAKE) -C examples $(MAKEOPTS) clean
 	$(MAKE) -C tests $(MAKEOPTS) clean
 	rm -f $(LANGUAGE)
 
