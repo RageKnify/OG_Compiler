@@ -55,6 +55,8 @@ namespace og {
 
   };
 
+  bool is_typed(std::shared_ptr<cdk::basic_type> type, cdk::typename_type name);
+
 } // og
 
 //---------------------------------------------------------------------------

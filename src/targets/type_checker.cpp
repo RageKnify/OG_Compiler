@@ -20,6 +20,13 @@ bool og::type_checker::deep_type_check(std::shared_ptr<cdk::basic_type> l, std::
   return l == r;
 }
 
+bool og::is_typed(std::shared_ptr<cdk::basic_type> type, cdk::typename_type name) {
+  if (type->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(type)->length() == 1) {
+    return is_typed(cdk::structured_type_cast(type)->component(0), name);
+  }
+  return type->name() == name;
+}
+
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl) {
@@ -87,8 +94,8 @@ void og::type_checker::processUnaryExpression(cdk::unary_operation_node *const n
 void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
   ASSERT_UNSPEC;
   processUnaryExpression(node, lvl);
-  if (! (node->argument()->is_typed(cdk::TYPE_INT) ||
-        node->argument()->is_typed(cdk::TYPE_DOUBLE)) ) {
+  if (! (is_typed(node->argument()->type(), cdk::TYPE_INT) ||
+        is_typed(node->argument()->type(), cdk::TYPE_DOUBLE)) ) {
     throw std::string("integer or real expression expected by symmetry operator");
   }
 }
@@ -96,8 +103,8 @@ void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
 void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) {
   ASSERT_UNSPEC;
   processUnaryExpression(node, lvl);
-  if (! (node->argument()->is_typed(cdk::TYPE_INT) ||
-        node->argument()->is_typed(cdk::TYPE_DOUBLE)) ) {
+  if (! (is_typed(node->argument()->type(), cdk::TYPE_INT) ||
+        is_typed(node->argument()->type(), cdk::TYPE_DOUBLE)) ) {
     throw std::string("integer or real expression expected by identity operator");
   }
 }
@@ -117,7 +124,7 @@ void og::type_checker::processIntegerBinaryExpression(cdk::binary_operation_node
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (!(node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))) {
+  if (!(is_typed(node->left()->type(), cdk::TYPE_INT) && is_typed(node->right()->type(), cdk::TYPE_INT))) {
     binaryOperationTypeError(node);
   }
 
@@ -129,14 +136,14 @@ void og::type_checker::processMultiplicationDivision(cdk::binary_operation_node 
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (!(node->left()->is_typed(cdk::TYPE_INT)  || node->left()->is_typed(cdk::TYPE_DOUBLE))  ||
-      !(node->right()->is_typed(cdk::TYPE_INT) || node->right()->is_typed(cdk::TYPE_DOUBLE))) {
+  if (!(is_typed(node->left()->type(), cdk::TYPE_INT)  || is_typed(node->left()->type(), cdk::TYPE_DOUBLE))  ||
+      !(is_typed(node->right()->type(), cdk::TYPE_INT) || is_typed(node->right()->type(), cdk::TYPE_DOUBLE))) {
         binaryOperationTypeError(node);
       }
 
-  if (node->left()->is_typed(cdk::TYPE_DOUBLE)) {
+  if (is_typed(node->left()->type(), cdk::TYPE_DOUBLE)) {
     node->type(node->left()->type());
-  } else if (node->right()->is_typed(cdk::TYPE_DOUBLE)) {
+  } else if (is_typed(node->right()->type(), cdk::TYPE_DOUBLE)) {
     node->type(node->right()->type());
   } else {
     // TYPE_INT
@@ -149,14 +156,14 @@ void og::type_checker::processComparison(cdk::binary_operation_node *const node,
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (!(node->left()->is_typed(cdk::TYPE_INT)  || node->left()->is_typed(cdk::TYPE_DOUBLE)) ||
-      !(node->right()->is_typed(cdk::TYPE_INT) || node->right()->is_typed(cdk::TYPE_DOUBLE))) {
+  if (!(is_typed(node->left()->type(), cdk::TYPE_INT)  || is_typed(node->left()->type(), cdk::TYPE_DOUBLE)) ||
+      !(is_typed(node->right()->type(), cdk::TYPE_INT) || is_typed(node->right()->type(), cdk::TYPE_DOUBLE))) {
         binaryOperationTypeError(node);
     }
 
-  if (node->left()->is_typed(cdk::TYPE_INT)) {
+  if (is_typed(node->left()->type(), cdk::TYPE_INT)) {
     node->type(node->left()->type());
-  } else if (node->right()->is_typed(cdk::TYPE_INT)) {
+  } else if (is_typed(node->right()->type(), cdk::TYPE_INT)) {
     node->type(node->right()->type());
   } else {
     node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
@@ -168,14 +175,14 @@ void og::type_checker::processEquality(cdk::binary_operation_node *const node, i
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if ((node->left()->is_typed(cdk::TYPE_DOUBLE)  && node->right()->is_typed(cdk::TYPE_POINTER)) ||
-      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_DOUBLE))) {
+  if ((is_typed(node->left()->type(), cdk::TYPE_DOUBLE)  && is_typed(node->right()->type(), cdk::TYPE_POINTER)) ||
+      (is_typed(node->left()->type(), cdk::TYPE_POINTER) && is_typed(node->right()->type(), cdk::TYPE_DOUBLE))) {
         binaryOperationTypeError(node);
       }
 
-  if (node->left()->is_typed(cdk::TYPE_INT)) {
+  if (is_typed(node->left()->type(), cdk::TYPE_INT)) {
     node->type(node->left()->type());
-  } else if (node->right()->is_typed(cdk::TYPE_INT)) {
+  } else if (is_typed(node->right()->type(), cdk::TYPE_INT)) {
     node->type(node->right()->type());
   } else {
     node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
@@ -187,21 +194,21 @@ void og::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (!(node->left()->is_typed(cdk::TYPE_INT)  || node->left()->is_typed(cdk::TYPE_DOUBLE)  || node->left()->is_typed(cdk::TYPE_POINTER))  ||
-      !(node->right()->is_typed(cdk::TYPE_INT) || node->right()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_POINTER)) ||
-      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
-      (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_POINTER)) ||
-      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER))) {
+  if (!(is_typed(node->left()->type(), cdk::TYPE_INT)  || is_typed(node->left()->type(), cdk::TYPE_DOUBLE)  || is_typed(node->left()->type(), cdk::TYPE_POINTER))  ||
+      !(is_typed(node->right()->type(), cdk::TYPE_INT) || is_typed(node->right()->type(), cdk::TYPE_DOUBLE) || is_typed(node->right()->type(), cdk::TYPE_POINTER)) ||
+      (is_typed(node->left()->type(), cdk::TYPE_POINTER) && is_typed(node->right()->type(), cdk::TYPE_DOUBLE)) ||
+      (is_typed(node->left()->type(), cdk::TYPE_DOUBLE) && is_typed(node->right()->type(), cdk::TYPE_POINTER)) ||
+      (is_typed(node->left()->type(), cdk::TYPE_POINTER) && is_typed(node->right()->type(), cdk::TYPE_POINTER))) {
         binaryOperationTypeError(node);
   }
 
-  if (node->left()->is_typed(cdk::TYPE_DOUBLE)) {
+  if (is_typed(node->left()->type(), cdk::TYPE_DOUBLE)) {
     node->type(node->left()->type());
-  } else if (node->right()->is_typed(cdk::TYPE_DOUBLE)) {
+  } else if (is_typed(node->right()->type(), cdk::TYPE_DOUBLE)) {
     node->type(node->right()->type());
-  } else if (node->left()->is_typed(cdk::TYPE_POINTER)) {
+  } else if (is_typed(node->left()->type(), cdk::TYPE_POINTER)) {
     node->type(node->left()->type());
-  } else if (node->right()->is_typed(cdk::TYPE_POINTER)) {
+  } else if (is_typed(node->right()->type(), cdk::TYPE_POINTER)) {
     node->type(node->right()->type());
   } else {
     // TYPE_INT
@@ -213,25 +220,25 @@ void og::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (!(node->left()->is_typed(cdk::TYPE_INT)  || node->left()->is_typed(cdk::TYPE_DOUBLE)  || node->left()->is_typed(cdk::TYPE_POINTER))  ||
-      !(node->right()->is_typed(cdk::TYPE_INT) || node->right()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_POINTER)) ||
-      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
-      (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_POINTER))) {
+  if (!(is_typed(node->left()->type(), cdk::TYPE_INT)  || is_typed(node->left()->type(), cdk::TYPE_DOUBLE)  || is_typed(node->left()->type(), cdk::TYPE_POINTER))  ||
+      !(is_typed(node->right()->type(), cdk::TYPE_INT) || is_typed(node->right()->type(), cdk::TYPE_DOUBLE) || is_typed(node->right()->type(), cdk::TYPE_POINTER)) ||
+      (is_typed(node->left()->type(), cdk::TYPE_POINTER) && is_typed(node->right()->type(), cdk::TYPE_DOUBLE)) ||
+      (is_typed(node->left()->type(), cdk::TYPE_DOUBLE) && is_typed(node->right()->type(), cdk::TYPE_POINTER))) {
         binaryOperationTypeError(node);
   }
 
-  if (node->left()->is_typed(cdk::TYPE_DOUBLE)) {
+  if (is_typed(node->left()->type(), cdk::TYPE_DOUBLE)) {
     node->type(node->left()->type());
-  } else if (node->right()->is_typed(cdk::TYPE_DOUBLE)) {
+  } else if (is_typed(node->right()->type(), cdk::TYPE_DOUBLE)) {
     node->type(node->right()->type());
-  } else if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) {
+  } else if (is_typed(node->left()->type(), cdk::TYPE_POINTER) && is_typed(node->right()->type(), cdk::TYPE_POINTER)) {
     if (!deep_type_check(node->left()->type(), node->right()->type()))
       binaryOperationTypeError(node);
 
     node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
-  } else if (node->left()->is_typed(cdk::TYPE_POINTER)) {
+  } else if (is_typed(node->left()->type(), cdk::TYPE_POINTER)) {
     node->type(node->left()->type());
-  } else if (node->right()->is_typed(cdk::TYPE_POINTER)) {
+  } else if (is_typed(node->right()->type(), cdk::TYPE_POINTER)) {
     node->type(node->right()->type());
   } else {
     // TYPE_INT
@@ -249,7 +256,7 @@ void og::type_checker::do_mod_node(cdk::mod_node *const node, int lvl) {
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (!(node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))) {
+  if (!(is_typed(node->left()->type(), cdk::TYPE_INT) && is_typed(node->right()->type(), cdk::TYPE_INT))) {
     binaryOperationTypeError(node);
   }
 
@@ -310,10 +317,10 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
     node->lvalue()->accept(this, lvl);  //DAVID: bah!
   }
 
-  if (!node->lvalue()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in left argument of assignment expression");
+  if (!is_typed(node->lvalue()->type(), cdk::TYPE_INT)) throw std::string("wrong type in left argument of assignment expression");
 
   node->rvalue()->accept(this, lvl + 2);
-  if (!node->rvalue()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in right argument of assignment expression");
+  if (!is_typed(node->rvalue()->type(), cdk::TYPE_INT)) throw std::string("wrong type in right argument of assignment expression");
 
   // in Simple, expressions are always int
   node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
