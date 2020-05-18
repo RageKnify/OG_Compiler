@@ -305,8 +305,11 @@ void og::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // simplified generation: all variables are global
-  _pf.ADDR(node->name());
+  auto symbol = _symtab.find(node->name());
+  if (symbol->global())
+    _pf.ADDR(node->name());
+  else
+    _pf.LOCAL(symbol->offset());
 }
 
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
