@@ -13,8 +13,8 @@
 bool og::type_checker::deep_type_check(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
   while (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER)
   {
-    l = cdk::reference_type_cast(l)->referenced();
-    r = cdk::reference_type_cast(r)->referenced();
+    l = referenced(l);
+    r = referenced(r);
   }
 
   return l == r;
@@ -25,6 +25,13 @@ bool og::is_typed(std::shared_ptr<cdk::basic_type> type, cdk::typename_type name
     return is_typed(cdk::structured_type_cast(type)->component(0), name);
   }
   return type->name() == name;
+}
+
+std::shared_ptr<cdk::basic_type> og::referenced(std::shared_ptr<cdk::basic_type> type) {
+  if (type->name() == cdk::TYPE_STRUCT) {
+    type = cdk::structured_type_cast(type)->component(0);
+  }
+  return cdk::reference_type_cast(type)->referenced();
 }
 
 //---------------------------------------------------------------------------
@@ -481,11 +488,11 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
 bool og::type_checker::assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
   return deep_type_check(l, r) ||
          (l->name() == cdk::TYPE_DOUBLE && assignment_compatible(cdk::make_primitive_type(4, cdk::TYPE_INT), r)) ||
-         (l->name() == cdk::TYPE_INT && r->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(r)->referenced()->name() == cdk::TYPE_VOID) ||
-         (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(r)->referenced()->name() == cdk::TYPE_VOID) ||
-         (r->name() == cdk::TYPE_POINTER && l->name() == cdk::TYPE_POINTER && cdk::reference_type_cast(l)->referenced()->name() == cdk::TYPE_VOID) ||
+         (l->name() == cdk::TYPE_INT && r->name() == cdk::TYPE_POINTER && referenced(r)->name() == cdk::TYPE_VOID) ||
+         (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER && referenced(r)->name() == cdk::TYPE_VOID) ||
+         (r->name() == cdk::TYPE_POINTER && l->name() == cdk::TYPE_POINTER && referenced(l)->name() == cdk::TYPE_VOID) ||
          (l->name() == cdk::TYPE_POINTER && r->name() == cdk::TYPE_POINTER
-            && assignment_compatible(cdk::reference_type_cast(l)->referenced(), cdk::reference_type_cast(r)->referenced()));
+            && assignment_compatible(referenced(l), referenced(r)));
 }
 //---------------------------------------------------------------------------
 

@@ -91,7 +91,7 @@ void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
   if (is_typed(node->type(), cdk::TYPE_DOUBLE) && !is_typed(node->left()->type(), cdk::TYPE_DOUBLE)) {
     _pf.I2D();
   } else if (is_typed(node->right()->type(), cdk::TYPE_POINTER)) {
-    auto t = cdk::reference_type_cast(node->right()->type())->referenced();
+    auto t = referenced(node->right()->type());
     if (t->name() != cdk::TYPE_VOID) {
       _pf.INT(t->size());
       _pf.MUL();
@@ -102,7 +102,7 @@ void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
   if (is_typed(node->type(), cdk::TYPE_DOUBLE) && !is_typed(node->right()->type(), cdk::TYPE_DOUBLE)) {
     _pf.I2D();
   } else if (is_typed(node->left()->type(), cdk::TYPE_POINTER)) {
-    auto t = cdk::reference_type_cast(node->left()->type())->referenced();
+    auto t = referenced(node->left()->type());
     if (t->name() != cdk::TYPE_VOID) {
       _pf.INT(t->size());
       _pf.MUL();
@@ -120,7 +120,7 @@ void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   if (is_typed(node->type(), cdk::TYPE_DOUBLE) && !is_typed(node->left()->type(), cdk::TYPE_DOUBLE)) {
     _pf.I2D();
   } else if (!is_typed(node->left()->type(), cdk::TYPE_POINTER) && is_typed(node->right()->type(), cdk::TYPE_POINTER)) {
-    auto t = cdk::reference_type_cast(node->right()->type())->referenced();
+    auto t = referenced(node->right()->type());
     if (t->name() != cdk::TYPE_VOID) {
       _pf.INT(t->size());
       _pf.MUL();
@@ -131,7 +131,7 @@ void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   if (is_typed(node->type(), cdk::TYPE_DOUBLE) && !is_typed(node->right()->type(), cdk::TYPE_DOUBLE)) {
     _pf.I2D();
   } else if (!is_typed(node->right()->type(), cdk::TYPE_POINTER) && is_typed(node->left()->type(), cdk::TYPE_POINTER)) {
-    auto t = cdk::reference_type_cast(node->left()->type())->referenced();
+    auto t = referenced(node->left()->type());
     if (t->name() != cdk::TYPE_VOID) {
       _pf.INT(t->size());
       _pf.MUL();
@@ -143,7 +143,7 @@ void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   } else {
     _pf.SUB();
     if (is_typed(node->left()->type(), cdk::TYPE_POINTER) && is_typed(node->right()->type(), cdk::TYPE_POINTER)) {
-      auto t = cdk::reference_type_cast(node->left()->type())->referenced();
+      auto t = referenced(node->left()->type());
       if (t->name() != cdk::TYPE_VOID) {
         _pf.INT(t->size());
         _pf.DIV();

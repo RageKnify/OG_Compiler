@@ -56,6 +56,8 @@ namespace og {
   };
 
   bool is_typed(std::shared_ptr<cdk::basic_type> type, cdk::typename_type name);
+  std::shared_ptr<cdk::basic_type> referenced(std::shared_ptr<cdk::basic_type> type);
+  bool is_void_pointer(std::shared_ptr<cdk::basic_type> type);
 
 } // og
 
