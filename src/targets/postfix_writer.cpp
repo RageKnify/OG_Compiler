@@ -17,9 +17,25 @@ void og::postfix_writer::do_data_node(cdk::data_node * const node, int lvl) {
 void og::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
   _pf.DOUBLE(node->value());
 }
+
 void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  int zero = ++_lbl;
+  int end = ++_lbl;
+  node->argument()->accept(this, lvl + 2);
+  _pf.JZ(mklbl(zero));
+
+  // If it was not 0 it becomes 0
+  _pf.INT(0);
+  _pf.JMP(mklbl(end));
+
+  // If it was 0 it becomes 1
+  _pf.LABEL(mklbl(zero));
+  _pf.INT(1);
+
+  _pf.LABEL(mklbl(end));
 }
+
 void og::postfix_writer::do_and_node(cdk::and_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int lbl = ++_lbl;
@@ -323,8 +339,16 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
   node->argument()->accept(this, lvl); // determine the value
   if (is_typed(node->argument()->type(), cdk::TYPE_INT)) {
     _pf.TRASH(4); // delete the evaluated value
+  } else if (is_typed(node->argument()->type(), cdk::TYPE_DOUBLE)) {
+    _pf.TRASH(8); // delete the evaluated value
   } else if (is_typed(node->argument()->type(), cdk::TYPE_STRING)) {
     _pf.TRASH(4); // delete the evaluated value's address
+  } else if (node->argument()->is_typed(cdk::TYPE_POINTER)) {
+    _pf.TRASH(4); // delete the evaluated value
+  } else if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
+    _pf.TRASH(node->argument()->type()->size()); // delete the evaluated value
+  } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
+    // nothing to delete
   } else {
     std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
     exit(1);
@@ -414,6 +438,8 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
 }
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  _pf.INT(node->tuple()->type()->size());
 }
 
 void og::postfix_writer::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {

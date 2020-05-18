@@ -105,9 +105,16 @@ EXP [eE]-?[0-9]+
 
 [0-9]*\.[0-9]+{EXP}?   |
 [0-9]{EXP}             |
-[0-9]\.{EXP}?          yylval.d = std::stod(yytext); return tREAL;
+[0-9]\.{EXP}?          {
+    try {
+        yylval.d = std::stod(yytext);
+        return tREAL;
+    } catch (const std::out_of_range&) {
+      yyerror("double precision float oveflow");
+    }
+}
 
-[-()<>=+*/%;,{}.@?[\]]  return *yytext;
+[-()<>=+~*/%;,{}.@?[\]]  return *yytext;
 
 [ \t\n\r]+             ; /* ignore whitespace */
 
