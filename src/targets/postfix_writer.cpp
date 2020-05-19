@@ -413,8 +413,11 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
     for (size_t i = 0; i < node->condition()->size(); i++) {
       cdk::expression_node *expr = (cdk::expression_node *)node->condition()->node(i);
       expr->accept(this, lvl + 4);
-      if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) _pf.D2I();
-      if (i > 0) _pf.AND();
+      if (i == node->condition()->size() - 1) {
+        if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) _pf.D2I();
+      } else {
+        _pf.TRASH(expr->type()->size());
+      }
     }
   } else {
     _pf.INT(1);
