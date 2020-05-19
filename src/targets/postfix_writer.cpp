@@ -560,6 +560,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           {
             _pf.I2D();
           }
+          _pf.LOCAL(offset);
           _pf.STDOUBLE();
         }
         else
