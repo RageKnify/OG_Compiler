@@ -310,42 +310,30 @@ void og::type_checker::do_variable_node(cdk::variable_node *const node, int lvl)
   const std::string &id = node->name();
   std::shared_ptr<og::symbol> symbol = _symtab.find(id);
 
-  if (symbol != nullptr) {
-    node->type(symbol->type());
-  } else {
-    throw id;
+  if (symbol == nullptr) {
+    throw "Use of undeclared variable: " + id;
   }
+  node->type(symbol->type());
 }
 
 void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  try {
-    node->lvalue()->accept(this, lvl);
-    node->type(node->lvalue()->type());
-  } catch (const std::string &id) {
-    throw "undeclared variable '" + id + "'";
-  }
+  node->lvalue()->accept(this, lvl);
+  node->type(node->lvalue()->type());
 }
 
 void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int lvl) {
   ASSERT_UNSPEC;
 
-  try {
-    node->lvalue()->accept(this, lvl);
-  } catch (const std::string &id) {
-    auto symbol = std::make_shared<og::symbol>(cdk::make_primitive_type(4, cdk::TYPE_INT), id);
-    _symtab.insert(id, symbol);
-    _parent->set_new_symbol(symbol);  // advise parent that a symbol has been inserted
-    node->lvalue()->accept(this, lvl);  //DAVID: bah!
+  node->lvalue()->accept(this, lvl);
+  node->rvalue()->accept(this, lvl + 2);
+
+  if (!assignment_compatible(node->lvalue()->type(), node->rvalue()->type())) {
+    throw "Incompatible types in assignment: " + cdk::to_string(node->lvalue()->type()) + " and " +
+          cdk::to_string(node->rvalue()->type());
   }
 
-  if (!is_typed(node->lvalue()->type(), cdk::TYPE_INT)) throw std::string("wrong type in left argument of assignment expression");
-
-  node->rvalue()->accept(this, lvl + 2);
-  if (!is_typed(node->rvalue()->type(), cdk::TYPE_INT)) throw std::string("wrong type in right argument of assignment expression");
-
-  // in Simple, expressions are always int
-  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
+  node->type(node->lvalue()->type());
 }
 
 //---------------------------------------------------------------------------
@@ -435,11 +423,29 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+  const auto &ids = node->identifiers();
   if (_in_function) {
-    /* TODO: local variable */
-  } else {
-    const auto &ids = node->identifiers();
+    if (!node->is_auto()) {
+      std::string id = *ids->at(0);
 
+      std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(node->varType(), id);
+      symbol->global(false);
+      symbol->qualifier(node->qualifier());
+      if(!_symtab.insert(symbol->name(), symbol))
+        throw std::string("Redeclaration of local variable: ") + id;
+      _parent->set_new_symbol(symbol);
+
+      _offset += node->varType()->size();
+      symbol->offset(-_offset);
+
+      if (node->initializer()) {
+        node->initializer()->accept(this, lvl + 2);
+        check_variable_definition(node, symbol);
+      }
+    } else {
+      /* TODO: tuple declaration */
+    }
+  } else {
     if (!node->is_auto()) {
       std::string id = *ids->at(0);
       std::shared_ptr<og::symbol> symbol = _symtab.find(id);
@@ -505,10 +511,10 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
 
 bool og::type_checker::assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
   return deep_type_check(l, r) ||
-         (l->name() == cdk::TYPE_DOUBLE && assignment_compatible(cdk::make_primitive_type(4, cdk::TYPE_INT), r)) ||
-         (l->name() == cdk::TYPE_INT && is_void_pointer(r)) ||
-         (l->name() == cdk::TYPE_POINTER && is_void_pointer(r)) ||
-         (r->name() == cdk::TYPE_POINTER && is_void_pointer(l));
+         (is_typed(l, cdk::TYPE_DOUBLE) && is_typed(r, cdk::TYPE_INT)) ||
+         (is_typed(l, cdk::TYPE_INT) && is_void_pointer(r)) ||
+         (is_typed(l, cdk::TYPE_POINTER) && is_void_pointer(r)) ||
+         (is_typed(r, cdk::TYPE_POINTER) && is_void_pointer(l));
 }
 //---------------------------------------------------------------------------
 

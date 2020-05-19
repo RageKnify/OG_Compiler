@@ -19,11 +19,12 @@ namespace og {
     int _lbl;
     std::set<std::string> _functions_to_declare;
     std::set<std::string> _uninitialized_vars;
+    int _offset;
 
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
-        basic_ast_visitor(compiler), _symtab(symtab), _pf(pf), _lbl(0) {
+        basic_ast_visitor(compiler), _symtab(symtab), _pf(pf), _lbl(0), _offset(0) {
     }
 
   public:
