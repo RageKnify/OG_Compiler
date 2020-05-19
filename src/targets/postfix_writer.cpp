@@ -77,11 +77,15 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
       for (std::string s : _uninitialized_vars)
       {
         auto symbol = _symtab.find(s);
-        if (symbol->qualifier() == tPUBLIC)
-          _pf.GLOBAL(symbol->name(), _pf.OBJ());
-
-        _pf.LABEL(symbol->name());
-        _pf.SALLOC(symbol->type()->size());
+        if (symbol->qualifier() == tREQUIRE) {
+          _pf.EXTERN(symbol->name());
+        } else {
+          if (symbol->qualifier() == tPUBLIC) {
+            _pf.GLOBAL(symbol->name(), _pf.OBJ());
+          }
+          _pf.LABEL(symbol->name());
+          _pf.SALLOC(symbol->type()->size());
+        }
       }
     }
   }
