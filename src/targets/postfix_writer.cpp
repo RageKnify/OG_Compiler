@@ -370,21 +370,8 @@ void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, i
 void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value
-  if (is_typed(node->argument()->type(), cdk::TYPE_INT)) {
-    _pf.TRASH(4); // delete the evaluated value
-  } else if (is_typed(node->argument()->type(), cdk::TYPE_DOUBLE)) {
-    _pf.TRASH(8); // delete the evaluated value
-  } else if (is_typed(node->argument()->type(), cdk::TYPE_STRING)) {
-    _pf.TRASH(4); // delete the evaluated value's address
-  } else if (node->argument()->is_typed(cdk::TYPE_POINTER)) {
-    _pf.TRASH(4); // delete the evaluated value
-  } else if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
-    _pf.TRASH(node->argument()->type()->size()); // delete the evaluated value
-  } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
-    // nothing to delete
-  } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
+  if (node->argument()->type()->size()) {
+    _pf.TRASH(node->argument()->type()->size());
   }
 }
 
@@ -433,16 +420,53 @@ void og::postfix_writer::do_read_node(og::read_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
-#if 0
+  int old_for_incr = _for_incr;
+  int old_for_end = _for_end;
+
+  int for_cond = ++_lbl;
+  _for_incr = ++_lbl;
+  _for_end = ++_lbl;
+
+  _symtab.push();
+  if (node->inits()) node->inits()->accept(this, lvl + 2);
+
   ASSERT_SAFE_EXPRESSIONS;
-  int lbl1, lbl2;
-  _pf.LABEL(mklbl(lbl1 = ++_lbl));
-  node->condition()->accept(this, lvl);
-  _pf.JZ(mklbl(lbl2 = ++_lbl));
+
+  _pf.LABEL(mklbl(for_cond));
+  if (node->condition()) {
+    for (size_t i = 0; i < node->condition()->size(); i++) {
+      cdk::expression_node *expr = (cdk::expression_node *)node->condition()->node(i);
+      expr->accept(this, lvl + 4);
+      if (i == node->condition()->size() - 1) {
+        if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) _pf.D2I();
+      } else {
+        _pf.TRASH(expr->type()->size());
+      }
+    }
+  } else {
+    _pf.INT(1);
+  }
+  _pf.JZ(mklbl(_for_end));
+
   node->block()->accept(this, lvl + 2);
-  _pf.JMP(mklbl(lbl1));
-  _pf.LABEL(mklbl(lbl2));
-#endif
+
+  _pf.LABEL(mklbl(_for_incr));
+  if (node->incrs()) {
+    node->incrs()->accept(this, lvl + 2);
+    size_t total = 0;
+    for (size_t i = 0; i < node->incrs()->size(); i++) {
+      total += ((cdk::expression_node*)node->incrs()->node(i))->type()->size();
+    }
+    _pf.TRASH(total);
+  }
+  _pf.JMP(mklbl(for_cond));
+
+  _pf.LABEL(mklbl(_for_end));
+
+  _symtab.pop();
+
+  _for_incr = old_for_incr;
+  _for_end = old_for_end;
 }
 
 //---------------------------------------------------------------------------
@@ -527,9 +551,21 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_break_node(og::break_node* const node, int lvl) {
+  if (_for_end == 0) {
+    std::cerr << node->lineno() << ": " << "Use of break outside of for loop" << std::endl; \
+    return;
+  }
+
+  _pf.JMP(mklbl(_for_end));
 }
 
 void og::postfix_writer::do_continue_node(og::continue_node * const node, int lvl) {
+  if (_for_incr == 0) {
+    std::cerr << node->lineno() << ": " << "Use of continue outside of for loop" << std::endl; \
+    return;
+  }
+
+  _pf.JMP(mklbl(_for_incr));
 }
 
 //---------------------------------------------------------------------------
