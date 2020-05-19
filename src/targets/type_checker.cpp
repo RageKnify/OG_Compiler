@@ -417,11 +417,9 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
   if (previous) {
     if (previous->qualifier() == node->qualifier()) {
       if (parameters != nullptr) {
-        if (parameters->size() != previous->params().size()) {
-          throw std::string("conflicting declaration for '" + function->name() + "'");
-        }
+        check_function_declaration(node, previous);
         for(size_t i = 0; i < parameters->size(); i++) {
-          if (((cdk::typed_node*)parameters->node(i))->type()->name() != previous->params().at(i)->name()) {
+          if (!deep_type_check(((cdk::typed_node*)parameters->node(i))->type(), previous->params().at(i))) {
             throw std::string("conflicting declaration for '" + function->name() + "'");
           }
         }
@@ -432,6 +430,26 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
   } else {
     _symtab.insert(function->name(), function);
     _parent->set_new_symbol(function);
+  }
+}
+
+void og::type_checker::check_function_declaration(og::function_declaration_node *const node, std::shared_ptr<og::symbol> symbol) {
+  if (!symbol->is_function()) {
+    std::ostringstream oss;
+    oss << "Redeclaration of variable '" << symbol->name() << "' as function";
+    throw oss.str();
+  }
+  else if (!deep_type_check(symbol->type(), node->type()))
+  {
+    std::ostringstream oss;
+    oss << "Redeclaration of function '" << symbol->name() << "' with different types: ";
+    oss << cdk::to_string(symbol->type()) << " and ";
+    oss << cdk::to_string(node->type());
+    throw oss.str();
+  }
+  else if (symbol->qualifier() != node->qualifier())
+  {
+    throw std::string("Redeclaration of function with different qualifier");
   }
 }
 
