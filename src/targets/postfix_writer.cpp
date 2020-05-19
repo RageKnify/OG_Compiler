@@ -645,8 +645,11 @@ void og::postfix_writer::do_pointer_index_node(og::pointer_index_node* const nod
 
   node->index()->accept(this, lvl + 2);
   auto reference_type = cdk::reference_type_cast(node->base()->type());
-  _pf.INT(reference_type->referenced()->size());
-  _pf.MUL();
+  int referenced_size = reference_type->referenced()->size();
+  if (referenced_size) {
+    _pf.INT(referenced_size);
+    _pf.MUL();
+  }
   _pf.ADD();
 }
 
