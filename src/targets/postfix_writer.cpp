@@ -538,9 +538,21 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_break_node(og::break_node* const node, int lvl) {
+  if (_for_end == 0) {
+    std::cerr << node->lineno() << ": " << "Use of break outside of for loop" << std::endl; \
+    return;
+  }
+
+  _pf.JMP(mklbl(_for_end));
 }
 
 void og::postfix_writer::do_continue_node(og::continue_node * const node, int lvl) {
+  if (_for_incr == 0) {
+    std::cerr << node->lineno() << ": " << "Use of continue outside of for loop" << std::endl; \
+    return;
+  }
+
+  _pf.JMP(mklbl(_for_incr));
 }
 
 //---------------------------------------------------------------------------
