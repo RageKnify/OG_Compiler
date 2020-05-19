@@ -325,22 +325,15 @@ void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
 void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int lvl) {
   ASSERT_UNSPEC;
 
-  try {
-    node->lvalue()->accept(this, lvl);
-  } catch (const std::string &id) {
-    auto symbol = std::make_shared<og::symbol>(cdk::make_primitive_type(4, cdk::TYPE_INT), id);
-    _symtab.insert(id, symbol);
-    _parent->set_new_symbol(symbol);  // advise parent that a symbol has been inserted
-    node->lvalue()->accept(this, lvl);  //DAVID: bah!
+  node->lvalue()->accept(this, lvl);
+  node->rvalue()->accept(this, lvl + 2);
+
+  if (!assignment_compatible(node->lvalue()->type(), node->rvalue()->type())) {
+    throw "Incompatible types in assignment: " + cdk::to_string(node->lvalue()->type()) + " and " +
+          cdk::to_string(node->rvalue()->type());
   }
 
-  if (!is_typed(node->lvalue()->type(), cdk::TYPE_INT)) throw std::string("wrong type in left argument of assignment expression");
-
-  node->rvalue()->accept(this, lvl + 2);
-  if (!is_typed(node->rvalue()->type(), cdk::TYPE_INT)) throw std::string("wrong type in right argument of assignment expression");
-
-  // in Simple, expressions are always int
-  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
+  node->type(node->lvalue()->type());
 }
 
 //---------------------------------------------------------------------------
