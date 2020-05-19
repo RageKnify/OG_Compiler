@@ -380,6 +380,14 @@ void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
 }
 
 void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (!is_typed(node->argument()->type(), cdk::TYPE_INT)) {
+    throw new std::string("Integer expression expected in memory reservation expression");
+  }
+  auto unspec_type = cdk::make_primitive_type(0, cdk::TYPE_UNSPEC);
+  auto reference_type = cdk::make_reference_type(4, unspec_type);
+  node->type(reference_type);
 }
 
 void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
