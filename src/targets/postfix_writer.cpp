@@ -65,6 +65,26 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
   for (size_t i = 0; i < node->size(); i++) {
     node->node(i)->accept(this, lvl);
   }
+  if (!_in_function) { // after all declarations
+    // declare external functions
+    for (std::string s: _functions_to_declare) {
+	  _pf.EXTERN(s);
+    }
+
+    if (_uninitialized_vars.size() > 0) {
+      _pf.BSS();
+      _pf.ALIGN();
+      for (std::string s : _uninitialized_vars)
+      {
+        auto symbol = _symtab.find(s);
+        if (symbol->qualifier() == tPUBLIC)
+          _pf.GLOBAL(symbol->name(), _pf.OBJ());
+
+        _pf.LABEL(symbol->name());
+        _pf.SALLOC(symbol->type()->size());
+      }
+    }
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -447,6 +467,14 @@ void og::postfix_writer::do_memory_reservation_node(og::memory_reservation_node 
 }
 
 void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+
+  if (!new_symbol()) return;
+
+  std::shared_ptr<og::symbol> function = new_symbol();
+  if (function->qualifier() == tREQUIRE) {
+    _functions_to_declare.insert(function->name());
+  }
 }
 
 void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
@@ -479,28 +507,6 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   _pf.LEAVE();
   _pf.RET();
-
-  if (node->identifier() == "og") { // TODO: move somewhere else. This isn't guaranteed to capture everything
-    // declare external functions
-    for (std::string s: _functions_to_declare) {
-      _pf.EXTERN(s);
-    }
-
-    // allocate uninitialized variables
-    if (_uninitialized_vars.size() > 0) {
-      _pf.BSS();
-      _pf.ALIGN();
-      for (std::string s : _uninitialized_vars)
-      {
-        auto symbol = _symtab.find(s);
-        if (symbol->qualifier() == tPUBLIC)
-          _pf.GLOBAL(symbol->name(), _pf.OBJ());
-
-        _pf.LABEL(symbol->name());
-        _pf.SALLOC(symbol->type()->size());
-      }
-    }
-  }
 }
 
 //---------------------------------------------------------------------------

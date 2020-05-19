@@ -46,7 +46,7 @@ bool og::is_void_pointer(std::shared_ptr<cdk::basic_type> type) {
 
 void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl) {
   for (size_t i = 0; i < node->size(); ++i) {
-	  node->node(i)->accept(this, lvl);
+    node->node(i)->accept(this, lvl);
   }
 }
 
@@ -396,6 +396,55 @@ void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *c
 }
 
 void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  std::string id;
+
+  if (node->identifier() == "og") {
+    id = "_main";
+  } else if (node->identifier() == "_main") {
+    id = "._main";
+  } else {
+    id = node->identifier();
+  }
+
+  std::vector<std::shared_ptr<cdk::basic_type>> param_types;
+  cdk::sequence_node *parameters = node->parameters();
+  if (parameters != nullptr) {
+    for(size_t i = 0; i < parameters->size(); i++) {
+      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+    }
+  }
+
+  std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
+      node->type(),
+      id,
+      0,
+      node->qualifier(),
+      true,
+      false,
+      true,
+      param_types
+      );
+  std::shared_ptr<og::symbol> previous = _symtab.find(function->name());
+
+  if (previous) {
+    if (previous->qualifier() == node->qualifier()) {
+      if (parameters != nullptr) {
+        if (parameters->size() != previous->params().size()) {
+          throw std::string("conflicting declaration for '" + function->name() + "'");
+        }
+        for(size_t i = 0; i < parameters->size(); i++) {
+          if (((cdk::typed_node*)parameters->node(i))->type()->name() != previous->params().at(i)->name()) {
+            throw std::string("conflicting declaration for '" + function->name() + "'");
+          }
+        }
+      }
+    } else {
+      throw std::string("conflicting declaration for '" + function->name() + "'");
+    }
+  } else {
+    _symtab.insert(function->name(), function);
+    _parent->set_new_symbol(function);
+  }
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {

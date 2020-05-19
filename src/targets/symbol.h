@@ -15,11 +15,25 @@ namespace og {
     bool _is_function;
     bool _defined;
     bool _global;
+    std::vector<std::shared_ptr<cdk::basic_type>> _params;
+
 
   public:
     symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name) :
         _type(type), _name(name), _offset(0), _qualifier(0),
         _is_function(false), _defined(false), _global(0) {
+    }
+
+    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, int offset,
+        int qualifier, bool is_function, bool defined, bool global) :
+        _type(type), _name(name), _offset(offset), _qualifier(qualifier),
+        _is_function(is_function), _defined(defined), _global(global) {
+    }
+
+    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, int offset,
+        int qualifier, bool is_function, bool defined, bool global, std::vector<std::shared_ptr<cdk::basic_type>> params) :
+        _type(type), _name(name), _offset(offset), _qualifier(qualifier),
+        _is_function(is_function), _defined(defined), _global(global), _params(params) {
     }
 
     virtual ~symbol() {
@@ -74,6 +88,14 @@ namespace og {
 
     bool global() const {
       return _global;
+    }
+
+    void params(std::vector<std::shared_ptr<cdk::basic_type>> p) {
+      _params = p;
+    }
+
+    std::vector<std::shared_ptr<cdk::basic_type>> &params() {
+      return _params;
     }
   };
 
