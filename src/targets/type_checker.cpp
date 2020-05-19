@@ -46,7 +46,7 @@ bool og::is_void_pointer(std::shared_ptr<cdk::basic_type> type) {
 
 void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl) {
   for (size_t i = 0; i < node->size(); ++i) {
-	  node->node(i)->accept(this, lvl);
+    node->node(i)->accept(this, lvl);
   }
 }
 
@@ -384,6 +384,73 @@ void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *c
 }
 
 void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  std::string id;
+
+  if (node->identifier() == "og") {
+    id = "_main";
+  } else if (node->identifier() == "_main") {
+    id = "._main";
+  } else {
+    id = node->identifier();
+  }
+
+  std::vector<std::shared_ptr<cdk::basic_type>> param_types;
+  cdk::sequence_node *parameters = node->parameters();
+  if (parameters != nullptr) {
+    for(size_t i = 0; i < parameters->size(); i++) {
+      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+    }
+  }
+
+  std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
+      node->type(),
+      id,
+      0,
+      node->qualifier(),
+      true,
+      false,
+      true,
+      param_types
+      );
+  std::shared_ptr<og::symbol> previous = _symtab.find(function->name());
+
+  if (previous) {
+    if (previous->qualifier() == node->qualifier()) {
+      if (parameters != nullptr) {
+        check_function_declaration(node, previous);
+        for(size_t i = 0; i < parameters->size(); i++) {
+          if (!deep_type_check(((cdk::typed_node*)parameters->node(i))->type(), previous->params().at(i))) {
+            throw std::string("conflicting declaration for '" + function->name() + "'");
+          }
+        }
+      }
+    } else {
+      throw std::string("conflicting declaration for '" + function->name() + "'");
+    }
+  } else {
+    _symtab.insert(function->name(), function);
+    _parent->set_new_symbol(function);
+  }
+}
+
+void og::type_checker::check_function_declaration(og::function_declaration_node *const node, std::shared_ptr<og::symbol> symbol) {
+  if (!symbol->is_function()) {
+    std::ostringstream oss;
+    oss << "Redeclaration of variable '" << symbol->name() << "' as function";
+    throw oss.str();
+  }
+  else if (!deep_type_check(symbol->type(), node->type()))
+  {
+    std::ostringstream oss;
+    oss << "Redeclaration of function '" << symbol->name() << "' with different types: ";
+    oss << cdk::to_string(symbol->type()) << " and ";
+    oss << cdk::to_string(node->type());
+    throw oss.str();
+  }
+  else if (symbol->qualifier() != node->qualifier())
+  {
+    throw std::string("Redeclaration of function with different qualifier");
+  }
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
