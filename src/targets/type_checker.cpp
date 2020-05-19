@@ -585,6 +585,17 @@ bool og::type_checker::assignment_compatible(std::shared_ptr<cdk::basic_type> l,
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_pointer_index_node(og::pointer_index_node* const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->base()->accept(this, lvl + 2);
+  if (!is_typed(node->base()->type(), cdk::TYPE_POINTER)) {
+    throw new std::string("Illegal attempt to index non-pointer expression");
+  }
+  auto reference_type = cdk::reference_type_cast(node->base()->type());
+  node->type(reference_type->referenced());
+  node->index()->accept(this, lvl + 2);
+  if (!is_typed(node->index()->type(), cdk::TYPE_INT)) {
+    throw new std::string("Non integer index for pointer-indexing");
+  }
 }
 
 void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
