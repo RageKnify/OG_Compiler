@@ -329,32 +329,40 @@ void og::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // simplified generation: all variables are global
-  _pf.ADDR(node->name());
+  auto symbol = _symtab.find(node->name());
+  if (symbol->global())
+    _pf.ADDR(node->name());
+  else
+    _pf.LOCAL(symbol->offset());
 }
 
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->lvalue()->accept(this, lvl);
-  _pf.LDINT(); // depends on type size
+  if (is_typed(node->type(), cdk::TYPE_DOUBLE))
+    _pf.LDDOUBLE();
+  else
+    _pf.LDINT();
 }
 
 void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->rvalue()->accept(this, lvl); // determine the new value
-  _pf.DUP32();
-  if (new_symbol() == nullptr) {
-    node->lvalue()->accept(this, lvl); // where to store the value
+  if (is_typed(node->lvalue()->type(), cdk::TYPE_DOUBLE)) {
+    if (!is_typed(node->rvalue()->type(), cdk::TYPE_DOUBLE)) {
+      _pf.I2D();
+    }
+    _pf.DUP64();
   } else {
-    _pf.DATA(); // variables are all global and live in DATA
-    _pf.ALIGN(); // make sure we are aligned
-    _pf.LABEL(new_symbol()->name()); // name variable location
-    reset_new_symbol();
-    _pf.SINT(0); // initialize it to 0 (zero)
-    _pf.TEXT(); // return to the TEXT segment
-    node->lvalue()->accept(this, lvl);  //DAVID: bah!
+    _pf.DUP32();
   }
-  _pf.STINT(); // store the value at address
+
+  node->lvalue()->accept(this, lvl); // where to store the value
+  if (is_typed(node->lvalue()->type(), cdk::TYPE_DOUBLE)) {
+    _pf.STDOUBLE();
+  } else {
+    _pf.STINT();
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -485,8 +493,10 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 }
 
 void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
-  /* TODO: IMPLEMENT */
-  node->instructions()->accept(this, lvl+2);
+  _symtab.push();
+  if (node->declarations()) node->declarations()->accept(this, lvl+2);
+  if (node->instructions()) node->instructions()->accept(this, lvl+2);
+  _symtab.pop();
 }
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
@@ -508,6 +518,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   node->block()->accept(this, lvl+2);
 
   _in_function = false;
+  _offset = 0;
 
   _pf.LEAVE();
   _pf.RET();
@@ -545,8 +556,29 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   if (_in_function) {
-    /* TODO: local variables */
-  } else {
+    if (node->initializer()) {
+      if (!node->is_auto()) {
+        std::string id = new_symbol()->name();
+        int offset = new_symbol()->offset();
+        node->initializer()->accept(this, lvl + 2);
+        if (is_typed(node->varType(), cdk::TYPE_DOUBLE)) {
+          if (!is_typed(node->initializer()->type(), cdk::TYPE_DOUBLE)) {
+            _pf.I2D();
+          }
+          _pf.LOCAL(offset);
+          _pf.STDOUBLE();
+        }
+        else {
+          _pf.LOCAL(offset);
+          _pf.STINT();
+        }
+      }
+      else {
+        /* TODO: tuple */
+      }
+    }
+  }
+  else {
     /* TODO: must handle case in which many symbols are created */
     if (new_symbol()) {
       _uninitialized_vars.insert(new_symbol()->name());
@@ -559,7 +591,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         _uninitialized_vars.erase(id);
         if (is_typed(node->initializer()->type(), cdk::TYPE_STRING)) {
           int lbl;
-          cdk::string_node *s = dynamic_cast<cdk::string_node*>(node->initializer());
+          cdk::string_node *s = dynamic_cast<cdk::string_node *>(node->initializer());
           _pf.RODATA();
           _pf.ALIGN();
           _pf.LABEL(mklbl(lbl = ++_lbl));
@@ -567,19 +599,27 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.DATA();
           _pf.LABEL(id);
           _pf.SADDR(mklbl(lbl));
-        } else if (is_typed(node->initializer()->type(), cdk::TYPE_DOUBLE)) {
-          cdk::double_node *d = dynamic_cast<cdk::double_node*>(node->initializer());
+        }
+        else if (is_typed(node->varType(), cdk::TYPE_DOUBLE)) {
           _pf.DATA();
           _pf.ALIGN();
           _pf.LABEL(id);
-          _pf.SDOUBLE(d->value());
-        } else if (is_typed(node->initializer()->type(), cdk::TYPE_POINTER)) {
+          cdk::double_node *d = dynamic_cast<cdk::double_node *>(node->initializer());
+          if (d) {
+            _pf.SDOUBLE(d->value());
+          } else {
+            cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(node->initializer());
+            _pf.SDOUBLE(i->value());
+          }
+        }
+        else if (is_typed(node->initializer()->type(), cdk::TYPE_POINTER)) {
           _pf.DATA();
           _pf.ALIGN();
           _pf.LABEL(id);
           _pf.SINT(0); // only nullptr literal
-        } else if (is_typed(node->initializer()->type(), cdk::TYPE_INT)) {
-          cdk::integer_node *i = dynamic_cast<cdk::integer_node*>(node->initializer());
+        }
+        else if (is_typed(node->initializer()->type(), cdk::TYPE_INT)) {
+          cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(node->initializer());
           _pf.DATA();
           _pf.ALIGN();
           _pf.LABEL(id);
@@ -587,7 +627,8 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         }
 
         _pf.TEXT();
-      } else {
+      }
+      else {
         /* TODO: tuple */
       }
 
