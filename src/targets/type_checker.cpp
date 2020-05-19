@@ -371,9 +371,8 @@ void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
-#if 0
-  node->condition()->accept(this, lvl + 4);
-#endif
+  if (node->condition()) node->condition()->accept(this, lvl + 2);
+  if (node->incrs()) node->incrs()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------

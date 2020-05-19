@@ -388,16 +388,49 @@ void og::postfix_writer::do_read_node(og::read_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
-#if 0
   ASSERT_SAFE_EXPRESSIONS;
-  int lbl1, lbl2;
-  _pf.LABEL(mklbl(lbl1 = ++_lbl));
-  node->condition()->accept(this, lvl);
-  _pf.JZ(mklbl(lbl2 = ++_lbl));
+  int old_for_incr = _for_incr;
+  int old_for_end = _for_end;
+
+  int for_cond = ++_lbl;
+  _for_incr = ++_lbl;
+  _for_end = ++_lbl;
+
+  _symtab.push();
+  if (node->inits()) node->inits()->accept(this, lvl + 2);
+
+  _pf.LABEL(mklbl(for_cond));
+  if (node->condition()) {
+    for (size_t i = 0; i < node->condition()->size(); i++) {
+      cdk::expression_node *expr = (cdk::expression_node *)node->condition()->node(i);
+      expr->accept(this, lvl + 4);
+      if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) _pf.D2I();
+      if (i > 0) _pf.AND();
+    }
+  } else {
+    _pf.INT(1);
+  }
+  _pf.JZ(mklbl(_for_end));
+
   node->block()->accept(this, lvl + 2);
-  _pf.JMP(mklbl(lbl1));
-  _pf.LABEL(mklbl(lbl2));
-#endif
+
+  _pf.LABEL(mklbl(_for_incr));
+  if (node->incrs()) {
+    node->incrs()->accept(this, lvl + 2);
+    size_t total;
+    for (size_t i = 0; i < node->incrs()->size(); i++) {
+      total += ((cdk::expression_node*)node->incrs()->node(i))->type()->size();
+    }
+    _pf.TRASH(total);
+  }
+  _pf.JMP(mklbl(for_cond));
+
+  _pf.LABEL(mklbl(_for_end));
+
+  _symtab.pop();
+
+  _for_incr = old_for_incr;
+  _for_end = old_for_end;
 }
 
 //---------------------------------------------------------------------------
