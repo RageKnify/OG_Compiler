@@ -511,10 +511,10 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
 
 bool og::type_checker::assignment_compatible(std::shared_ptr<cdk::basic_type> l, std::shared_ptr<cdk::basic_type> r) {
   return deep_type_check(l, r) ||
-         (l->name() == cdk::TYPE_DOUBLE && assignment_compatible(cdk::make_primitive_type(4, cdk::TYPE_INT), r)) ||
-         (l->name() == cdk::TYPE_INT && is_void_pointer(r)) ||
-         (l->name() == cdk::TYPE_POINTER && is_void_pointer(r)) ||
-         (r->name() == cdk::TYPE_POINTER && is_void_pointer(l));
+         (is_typed(l, cdk::TYPE_DOUBLE) && is_typed(r, cdk::TYPE_INT)) ||
+         (is_typed(l, cdk::TYPE_INT) && is_void_pointer(r)) ||
+         (is_typed(l, cdk::TYPE_POINTER) && is_void_pointer(r)) ||
+         (is_typed(r, cdk::TYPE_POINTER) && is_void_pointer(l));
 }
 //---------------------------------------------------------------------------
 
