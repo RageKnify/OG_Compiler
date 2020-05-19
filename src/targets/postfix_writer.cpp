@@ -692,6 +692,16 @@ void og::postfix_writer::do_pointer_index_node(og::pointer_index_node* const nod
 }
 
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  node->tuple()->accept(this, lvl + 2);
+  auto structured_type = cdk::structured_type_cast(node->tuple()->type());
+  size_t idx = node->index();
+  size_t jump = 0;
+  for (size_t i = 0; i < idx - 1; ++i) { // idx - 1 because tuples start at 1
+    jump += structured_type->component(idx)->size();
+  }
+  _pf.INT(jump);
+  _pf.ADD();
 }
 
 //---------------------------------------------------------------------------
