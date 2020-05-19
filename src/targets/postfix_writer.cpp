@@ -68,7 +68,7 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
   if (!_in_function) { // after all declarations
     // declare external functions
     for (std::string s: _functions_to_declare) {
-	  _pf.EXTERN(s);
+      _pf.EXTERN(s);
     }
 
     if (_uninitialized_vars.size() > 0) {
@@ -640,6 +640,14 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_pointer_index_node(og::pointer_index_node* const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  node->base()->accept(this, lvl + 2);
+
+  node->index()->accept(this, lvl + 2);
+  auto reference_type = cdk::reference_type_cast(node->base()->type());
+  _pf.INT(reference_type->referenced()->size());
+  _pf.MUL();
+  _pf.ADD();
 }
 
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
