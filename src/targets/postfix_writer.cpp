@@ -396,7 +396,6 @@ void og::postfix_writer::do_read_node(og::read_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
   int old_for_incr = _for_incr;
   int old_for_end = _for_end;
 
@@ -406,6 +405,8 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 
   _symtab.push();
   if (node->inits()) node->inits()->accept(this, lvl + 2);
+
+  ASSERT_SAFE_EXPRESSIONS;
 
   _pf.LABEL(mklbl(for_cond));
   if (node->condition()) {
