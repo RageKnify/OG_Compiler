@@ -425,7 +425,7 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
   _pf.LABEL(mklbl(_for_incr));
   if (node->incrs()) {
     node->incrs()->accept(this, lvl + 2);
-    size_t total;
+    size_t total = 0;
     for (size_t i = 0; i < node->incrs()->size(); i++) {
       total += ((cdk::expression_node*)node->incrs()->node(i))->type()->size();
     }
