@@ -601,13 +601,18 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.LABEL(id);
           _pf.SADDR(mklbl(lbl));
         }
-        else if (is_typed(node->initializer()->type(), cdk::TYPE_DOUBLE))
+        else if (is_typed(node->varType(), cdk::TYPE_DOUBLE))
         {
-          cdk::double_node *d = dynamic_cast<cdk::double_node *>(node->initializer());
           _pf.DATA();
           _pf.ALIGN();
           _pf.LABEL(id);
-          _pf.SDOUBLE(d->value());
+          cdk::double_node *d = dynamic_cast<cdk::double_node *>(node->initializer());
+          if (d) {
+            _pf.SDOUBLE(d->value());
+          } else {
+            cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(node->initializer());
+            _pf.SDOUBLE(i->value());
+          }
         }
         else if (is_typed(node->initializer()->type(), cdk::TYPE_POINTER))
         {
