@@ -338,21 +338,8 @@ void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, i
 void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value
-  if (is_typed(node->argument()->type(), cdk::TYPE_INT)) {
-    _pf.TRASH(4); // delete the evaluated value
-  } else if (is_typed(node->argument()->type(), cdk::TYPE_DOUBLE)) {
-    _pf.TRASH(8); // delete the evaluated value
-  } else if (is_typed(node->argument()->type(), cdk::TYPE_STRING)) {
-    _pf.TRASH(4); // delete the evaluated value's address
-  } else if (node->argument()->is_typed(cdk::TYPE_POINTER)) {
-    _pf.TRASH(4); // delete the evaluated value
-  } else if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
-    _pf.TRASH(node->argument()->type()->size()); // delete the evaluated value
-  } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
-    // nothing to delete
-  } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
+  if (node->argument()->type()->size()) {
+    _pf.TRASH(node->argument()->type()->size());
   }
 }
 
