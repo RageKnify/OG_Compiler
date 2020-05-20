@@ -647,6 +647,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           /* TODO: non-explosion */
         }
       }
+      reset_new_symbol();
     }
   }
   else {
