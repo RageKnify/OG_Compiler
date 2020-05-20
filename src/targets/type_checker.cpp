@@ -391,7 +391,7 @@ void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *c
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   if (!is_typed(node->argument()->type(), cdk::TYPE_INT)) {
-    throw new std::string("Integer expression expected in memory reservation expression");
+    throw std::string("Integer expression expected in memory reservation expression");
   }
   auto unspec_type = cdk::make_primitive_type(0, cdk::TYPE_UNSPEC);
   auto reference_type = cdk::make_reference_type(4, unspec_type);
@@ -469,6 +469,53 @@ void og::type_checker::check_function_declaration(og::function_declaration_node 
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+
+  std::string id;
+  if (node->identifier() == "og") {
+    id = "_main";
+  } else if (node->identifier() == "_main") {
+    id = "._main";
+  } else {
+    id = node->identifier();
+  }
+
+  std::shared_ptr<og::symbol> function = _symtab.find(id);
+
+  if (function == NULL) {
+    throw std::string("function '" + node->identifier() + "'is undeclared");
+  }
+
+  if (!function->is_function()) {
+    throw std::string("symbol '" + node->identifier() + "'is not a function");
+  }
+
+  if (function->params().size() == node->arguments()->size()) {
+    if (function->params().size()) {
+      node->arguments()->accept(this, lvl + 2);
+      cdk::sequence_node* args = node->arguments();
+      std::vector<std::shared_ptr<cdk::basic_type>> &params = function->params();
+
+      for (size_t i = 0; i < params.size(); ++i) {
+        auto arg = (cdk::expression_node*)args->node(i);
+        std::shared_ptr<cdk::basic_type> param_type = params[i];
+
+        if (!assignment_compatible(param_type, arg->type())) {
+          std::ostringstream oss;
+          oss << "function '" << node->identifier() << "' expected argument of type `";
+          oss << to_string(param_type) << "` but got `" << to_string(arg->type()) << "` instead";
+          throw oss.str();
+        }
+      }
+    }
+  }
+  else {
+    std::ostringstream oss;
+    oss << "function '" << node->identifier() << "' expected ";
+    oss << function->params().size() << " arguments but got " << node->arguments()->size();
+    throw oss.str();
+  }
+  node->type(function->type());
 }
 
 //---------------------------------------------------------------------------
@@ -607,27 +654,27 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node* const node,
   ASSERT_UNSPEC;
   node->base()->accept(this, lvl + 2);
   if (!is_typed(node->base()->type(), cdk::TYPE_POINTER)) {
-    throw new std::string("Illegal attempt to index non-pointer expression");
+    throw std::string("Illegal attempt to index non-pointer expression");
   }
   auto reference_type = cdk::reference_type_cast(node->base()->type());
   node->type(reference_type->referenced());
   node->index()->accept(this, lvl + 2);
   if (!is_typed(node->index()->type(), cdk::TYPE_INT)) {
-    throw new std::string("Non integer index for pointer-indexing");
+    throw std::string("Non integer index for pointer-indexing");
   }
 }
 
 void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
   ASSERT_UNSPEC;
   node->tuple()->accept(this, lvl + 2);
-  if (!node->tuple()->is_typed(cdk::TYPE_STRUCT)) {
-    throw new std::string("Illegal attempt to index non-tuple expression");
+  if (!is_typed(node->tuple()->type(), cdk::TYPE_STRUCT)) {
+    throw std::string("Illegal attempt to index non-tuple expression");
   }
 
   size_t idx = node->index();
   auto structured_type = cdk::structured_type_cast(node->tuple()->type());
   if (idx < 1 || idx > structured_type->length()) {
-    throw new std::string("Out of bounds access in tuple");
+    throw std::string("Out of bounds access in tuple");
   }
   node->type(structured_type->component(idx-1));
 }
