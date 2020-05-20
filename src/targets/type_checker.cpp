@@ -528,7 +528,29 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         check_variable_definition(node, symbol);
       }
     } else {
-      /* TODO: tuple declaration */
+      auto tuple = (og::tuple_node*)node->initializer();
+      tuple->accept(this, lvl + 2);
+      if (ids->size() > 1) { // explode tuple
+        if (ids->size() != tuple->members()->size()) {
+          throw "Auto declaration with wrong number of elements: left " + std::to_string(ids->size()) +
+                ", right " + std::to_string(tuple->members()->size());
+        }
+        for (size_t i = 0; i < ids->size(); i++) {
+          std::string id = *ids->at(i);
+
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple->members()->node(i))->type();
+          std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(type, id);
+          symbol->global(false);
+          symbol->qualifier(node->qualifier());
+          if(!_symtab.insert(symbol->name(), symbol))
+            throw std::string("Redeclaration of local variable: ") + id;
+          _parent->set_new_symbol(symbol);
+          _offset += type->size();
+          symbol->offset(-_offset);
+        }
+      } else {
+        /* TODO: non-explosion */
+      }
     }
   } else {
     if (!node->is_auto()) {

@@ -27,7 +27,7 @@ protected:
 private:
 
   // last symbol inserted in symbol table
-  std::shared_ptr<og::symbol> _new_symbol;
+  std::vector<std::shared_ptr<og::symbol>> _new_symbols;
 
 protected:
   basic_ast_visitor(std::shared_ptr<cdk::compiler> compiler) :
@@ -48,15 +48,18 @@ public:
 
 public:
   std::shared_ptr<og::symbol> new_symbol() {
-    return _new_symbol;
+    return _new_symbols.empty() ? nullptr : _new_symbols[0];
+  }
+  std::vector<std::shared_ptr<og::symbol>>& new_symbols() {
+    return _new_symbols;
   }
 
   void set_new_symbol(std::shared_ptr<og::symbol> symbol) {
-    _new_symbol = symbol;
+    _new_symbols.push_back(symbol);
   }
 
   void reset_new_symbol() {
-    _new_symbol = nullptr;
+    _new_symbols.clear();
   }
 
 public:

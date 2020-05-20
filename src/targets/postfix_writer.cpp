@@ -624,9 +624,28 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.LOCAL(offset);
           _pf.STINT();
         }
-      }
-      else {
-        /* TODO: tuple */
+      } else {
+        const auto &ids = node->identifiers();
+        auto tuple = (og::tuple_node*)node->initializer();
+        if (ids->size() > 1) { // explode tuple
+          for (size_t i = 0; i < ids->size(); i++) {
+            std::string id = new_symbols()[i]->name();
+            int offset = new_symbols()[i]->offset();
+            auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+            expr->accept(this, lvl + 2);
+
+            if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+              _pf.LOCAL(offset);
+              _pf.STDOUBLE();
+            }
+            else {
+              _pf.LOCAL(offset);
+              _pf.STINT();
+            }
+          }
+        } else {
+          /* TODO: non-explosion */
+        }
       }
     }
   }

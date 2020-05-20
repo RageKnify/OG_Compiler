@@ -1,4 +1,5 @@
 #include "targets/frame_size_calculator.h"
+#include "targets/type_checker.h"
 #include "targets/symbol.h"
 #include "ast/all.h"
 
@@ -158,7 +159,9 @@ void og::frame_size_calculator::do_variable_declaration_node(og::variable_declar
 	if (!node->is_auto()) {
 		_localsize += node->varType()->size();
 	} else {
-		/* TODO: tuples */
+		int trash;
+		CHECK_TYPES(_compiler, _symtab, node->initializer(), true, trash);
+		_localsize += node->initializer()->type()->size();
 	}
 }
 
