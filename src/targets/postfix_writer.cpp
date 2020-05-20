@@ -697,4 +697,6 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, i
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_tuple_node(og::tuple_node* const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  // empty
 }

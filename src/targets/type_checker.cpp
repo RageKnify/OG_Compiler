@@ -607,4 +607,16 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_tuple_node(og::tuple_node* const node, int lvl) {
+  ASSERT_UNSPEC;
+  std::vector<std::shared_ptr<cdk::basic_type>> types;
+  node->members()->accept(this, lvl + 2);
+  if (node->members()->size() == 1 &&
+      (((cdk::expression_node*)node->members()->node(0))->is_typed(cdk::TYPE_STRUCT))) { // avoid creating a nested unit tuple
+    node->type(((cdk::expression_node*)node->members()->node(0))->type());
+  } else {
+    for (size_t i = 0; i < node->members()->size(); i++) {
+      types.push_back((((cdk::expression_node*)node->members()->node(i))->type()));
+    }
+    node->type(cdk::make_structured_type(types));
+  }
 }
