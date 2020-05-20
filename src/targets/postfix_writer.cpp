@@ -736,7 +736,7 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, i
   size_t idx = node->index();
   size_t jump = 0;
   for (size_t i = 0; i < idx - 1; ++i) { // idx - 1 because tuples start at 1
-    jump += structured_type->component(idx)->size();
+    jump += structured_type->component(i)->size();
   }
   if (jump) {
     _pf.INT(jump);
