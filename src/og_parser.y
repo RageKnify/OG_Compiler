@@ -77,7 +77,6 @@ vardec :          type  tIDENTIFIER               { $$ = new og::variable_declar
        | tPUBLIC  type  tIDENTIFIER               { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), NULL); }
        | tPUBLIC  type  tIDENTIFIER '=' literal   { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  $2, new std::vector<std::string*>({$3}), $5); }
        | tREQUIRE type  tIDENTIFIER               { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), NULL); }
-       | tREQUIRE type  tIDENTIFIER '=' literal   { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, new std::vector<std::string*>({$3}), $5); }
        |          tAUTO identifiers '=' literals  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $2, new og::tuple_node(LINE, $4)); }
        | tPUBLIC  tAUTO identifiers '=' literals  { $$ = new og::variable_declaration_node(LINE, tPUBLIC,  new cdk::primitive_type(0, cdk::TYPE_UNSPEC), $3, new og::tuple_node(LINE, $5)); }
        ;
