@@ -614,7 +614,6 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
   if (_in_function) {
     if (node->initializer()) {
       if (!node->is_auto()) {
-        std::string id = new_symbol()->name();
         int offset = new_symbol()->offset();
         node->initializer()->accept(this, lvl + 2);
         if (is_typed(node->varType(), cdk::TYPE_DOUBLE)) {
@@ -632,8 +631,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         const auto &ids = node->identifiers();
         auto tuple = (og::tuple_node*)node->initializer();
         if (ids->size() > 1) { // explode tuple
-          for (size_t i = 0; i < ids->size(); i++) {
-            std::string id = new_symbols()[i]->name();
+          for (size_t i = 0; i < tuple->members()->size(); i++) {
             int offset = new_symbols()[i]->offset();
             auto expr = ((cdk::expression_node*)tuple->members()->node(i));
             expr->accept(this, lvl + 2);
@@ -648,7 +646,26 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
             }
           }
         } else {
-          /* TODO: non-explosion */
+          int offset = new_symbol()->offset();
+          for (size_t i = 0; i < tuple->members()->size(); i++) {
+            auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+            expr->accept(this, lvl + 2);
+
+            if (is_typed(expr->type(), cdk::TYPE_STRUCT)) {
+              /* TODO: Tuple function call */
+              /* Minor problem, since the tuple is the function's TYPE_STRUCT, this condition will never be true for `auto a = f()`*/
+              /* By allowing nested unit tuples, this should work */
+            } else if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+              _pf.LOCAL(offset);
+              _pf.STDOUBLE();
+            }
+            else {
+              _pf.LOCAL(offset);
+              _pf.STINT();
+            }
+
+            offset += expr->type()->size();
+          }
         }
       }
       reset_new_symbol();

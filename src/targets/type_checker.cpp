@@ -549,7 +549,16 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
           symbol->offset(-_offset);
         }
       } else {
-        /* TODO: non-explosion */
+          std::string id = *ids->at(0);
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple)->type();
+          std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(type, id);
+          symbol->global(false);
+          symbol->qualifier(node->qualifier());
+          if(!_symtab.insert(symbol->name(), symbol))
+            throw std::string("Redeclaration of local variable: ") + id;
+          _parent->set_new_symbol(symbol);
+          _offset += type->size();
+          symbol->offset(-_offset);
       }
     }
   } else {
