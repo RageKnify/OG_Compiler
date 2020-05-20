@@ -568,14 +568,15 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     _pf.TRASH(argsSize);
   }
 
-  if (! (function->type()->name() == cdk::TYPE_DOUBLE)) {
-    _pf.LDFVAL32();
-  }
-  else if (function->type()->name() == cdk::TYPE_VOID) {
+  auto type_name = function->type()->name();
+  if (type_name == cdk::TYPE_VOID) {
     // No value to fetch
   }
-  else {
+  else if (type_name == cdk::TYPE_DOUBLE) {
     _pf.LDFVAL64();
+  }
+  else {
+    _pf.LDFVAL32();
   }
 }
 
