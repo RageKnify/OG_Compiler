@@ -328,6 +328,14 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->lvalue()->accept(this, lvl);
   node->rvalue()->accept(this, lvl + 2);
 
+  // For memory reservation_node, it is a pointer, but it doesn't know to what
+  if (node->rvalue()->type()->name() == cdk::TYPE_POINTER && is_typed(node->lvalue()->type(), cdk::TYPE_POINTER)) {
+    auto referenced_type = referenced(node->rvalue()->type());
+    if (referenced_type->name() == cdk::TYPE_UNSPEC) {
+      node->rvalue()->type(node->lvalue()->type());
+    }
+  }
+
   if (!assignment_compatible(node->lvalue()->type(), node->rvalue()->type())) {
     throw "Incompatible types in assignment: " + cdk::to_string(node->lvalue()->type()) + " and " +
           cdk::to_string(node->rvalue()->type());
