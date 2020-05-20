@@ -500,6 +500,20 @@ void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
 }
 
 void og::postfix_writer::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  node->argument()->accept(this, lvl);
+  auto reference_type = cdk::reference_type_cast(node->type());
+  auto referenced_type = reference_type->referenced();
+  if (is_typed(referenced_type, cdk::TYPE_UNSPEC)) {
+    throw new std::string("Unspecified pointer type for memory reservation");
+  }
+  int size = referenced_type->size();
+  if (size) {
+    _pf.INT(size);
+    _pf.MUL();
+  }
+  _pf.ALLOC();
+  _pf.SP();
 }
 
 void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {

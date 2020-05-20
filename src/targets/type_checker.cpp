@@ -328,6 +328,14 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->lvalue()->accept(this, lvl);
   node->rvalue()->accept(this, lvl + 2);
 
+  // For memory reservation_node, it is a pointer, but it doesn't know to what
+  if (node->rvalue()->type()->name() == cdk::TYPE_POINTER && is_typed(node->lvalue()->type(), cdk::TYPE_POINTER)) {
+    auto referenced_type = referenced(node->rvalue()->type());
+    if (referenced_type->name() == cdk::TYPE_UNSPEC) {
+      node->rvalue()->type(node->lvalue()->type());
+    }
+  }
+
   if (!assignment_compatible(node->lvalue()->type(), node->rvalue()->type())) {
     throw "Incompatible types in assignment: " + cdk::to_string(node->lvalue()->type()) + " and " +
           cdk::to_string(node->rvalue()->type());
@@ -380,6 +388,14 @@ void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
 }
 
 void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (!is_typed(node->argument()->type(), cdk::TYPE_INT)) {
+    throw new std::string("Integer expression expected in memory reservation expression");
+  }
+  auto unspec_type = cdk::make_primitive_type(0, cdk::TYPE_UNSPEC);
+  auto reference_type = cdk::make_reference_type(4, unspec_type);
+  node->type(reference_type);
 }
 
 void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
