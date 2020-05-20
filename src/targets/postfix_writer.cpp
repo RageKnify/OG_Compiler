@@ -672,7 +672,6 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
     }
   }
   else {
-    /* TODO: must handle case in which many symbols are created */
     if (new_symbol()) {
       _uninitialized_vars.insert(new_symbol()->name());
       reset_new_symbol();
@@ -690,6 +689,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.LABEL(mklbl(lbl = ++_lbl));
           _pf.SSTRING(s->value());
           _pf.DATA();
+          _pf.ALIGN();
           _pf.LABEL(id);
           _pf.SADDR(mklbl(lbl));
         }
@@ -719,12 +719,63 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.SINT(i->value());
         }
 
-        _pf.TEXT();
       }
-      else {
-        /* TODO: tuple */
-      }
+      else { // tuple
+        const auto &ids = node->identifiers();
+        auto tuple = (og::tuple_node*)node->initializer();
+        std::string id;
 
+        if (ids->size() == 1) { // non-explosion
+          id = *ids->at(0);
+          _pf.DATA();
+          _pf.LABEL(id);
+          _uninitialized_vars.erase(id);
+        }
+
+        for (size_t i = 0; i < tuple->members()->size(); i++) {
+          auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+          if (ids->size() != 1) id = *ids->at(i);
+          _uninitialized_vars.erase(id);
+
+          if (is_typed(expr->type(), cdk::TYPE_STRING)) {
+            int lbl;
+            cdk::string_node *s = dynamic_cast<cdk::string_node *>(expr);
+            _pf.RODATA();
+            _pf.ALIGN();
+            _pf.LABEL(mklbl(lbl = ++_lbl));
+            _pf.SSTRING(s->value());
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            _pf.SADDR(mklbl(lbl));
+          }
+          else if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            cdk::double_node *d = dynamic_cast<cdk::double_node *>(expr);
+            if (d) {
+              _pf.SDOUBLE(d->value());
+            } else {
+              cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(expr);
+              _pf.SDOUBLE(i->value());
+            }
+          }
+          else if (is_typed(expr->type(), cdk::TYPE_POINTER)) {
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            _pf.SINT(0); // only nullptr literal
+          }
+          else if (is_typed(expr->type(), cdk::TYPE_INT)) {
+            cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(expr);
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            _pf.SINT(i->value());
+          }
+        }
+      }
       _pf.TEXT();
     }
   }

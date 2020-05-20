@@ -561,7 +561,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
           symbol->offset(-_offset);
       }
     }
-  } else {
+  } else { // outside function
     if (!node->is_auto()) {
       std::string id = *ids->at(0);
       std::shared_ptr<og::symbol> symbol = _symtab.find(id);
@@ -573,7 +573,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         _symtab.insert(symbol->name(), symbol);
         _parent->set_new_symbol(symbol);
       } else {
-        check_variable_declaration(node, symbol);
+        check_variable_declaration(node, symbol, node->varType());
       }
 
       if (node->initializer()) {
@@ -581,25 +581,68 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         check_variable_definition(node, symbol);
         symbol->defined(true);
       }
-    } else {
-      /* TODO: tuple declaration */
+    } else { // auto dec
+      auto tuple = (og::tuple_node*)node->initializer();
+      tuple->accept(this, lvl + 2);
+      if (ids->size() > 1) { // explode tuple
+        if (ids->size() != tuple->members()->size()) {
+          throw "Auto declaration with wrong number of elements: left " + std::to_string(ids->size()) +
+                ", right " + std::to_string(tuple->members()->size());
+        }
+        for (size_t i = 0; i < ids->size(); i++) {
+          std::string id = *ids->at(i);
+          std::shared_ptr<og::symbol> symbol = _symtab.find(id);
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple->members()->node(i))->type();
+
+          if (symbol == nullptr) {
+            symbol = std::make_shared<og::symbol>(type, id);
+            symbol->global(true);
+            symbol->qualifier(node->qualifier());
+            _symtab.insert(symbol->name(), symbol);
+            _parent->set_new_symbol(symbol);
+          } else {
+            check_variable_declaration(node, symbol, type);
+          }
+
+          node->initializer()->accept(this, lvl + 2);
+          check_variable_definition(node, symbol);
+          symbol->defined(true);
+        }
+      } else { // non-explosion
+          std::string id = *ids->at(0);
+          std::shared_ptr<og::symbol> symbol = _symtab.find(id);
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple)->type();
+          if (symbol == nullptr) {
+            symbol = std::make_shared<og::symbol>(type, id);
+            symbol->global(true);
+            symbol->qualifier(node->qualifier());
+            _symtab.insert(symbol->name(), symbol);
+            _parent->set_new_symbol(symbol);
+          } else {
+            check_variable_declaration(node, symbol, type);
+          }
+
+          node->initializer()->accept(this, lvl + 2);
+          check_variable_definition(node, symbol);
+          symbol->defined(true);
+      }
     }
   }
 }
 
-void og::type_checker::check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol) {
+void og::type_checker::check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol, std::shared_ptr<cdk::basic_type> type) {
   if (symbol->is_function())
   {
     std::ostringstream oss;
     oss << "Redeclaration of function '" << symbol->name() << "' as variable";
     throw oss.str();
   }
-  else if (!deep_type_check(symbol->type(), node->varType()))
+  else if (!deep_type_check(symbol->type(), type))
   {
     std::ostringstream oss;
     oss << "Redeclaration of variable '" << symbol->name() << "' with different types: ";
     oss << cdk::to_string(symbol->type()) << " and ";
-    oss << cdk::to_string(node->varType());
+    oss << cdk::to_string(type);
     throw oss.str();
   }
   else if (symbol->qualifier() != node->qualifier())
@@ -615,7 +658,7 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
     oss << "Redefinition of variable '" << symbol->name() << "'";
     throw oss.str();
   }
-  else if (!assignment_compatible(symbol->type(), node->initializer()->type()))
+  else if (!node->varType()->name() == cdk::TYPE_UNSPEC && !assignment_compatible(symbol->type(), node->initializer()->type()))
   {
     std::ostringstream oss;
     oss << "Wrong types for definition: ";
