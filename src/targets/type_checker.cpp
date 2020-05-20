@@ -391,7 +391,7 @@ void og::type_checker::do_memory_reservation_node(og::memory_reservation_node *c
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   if (!is_typed(node->argument()->type(), cdk::TYPE_INT)) {
-    throw new std::string("Integer expression expected in memory reservation expression");
+    throw std::string("Integer expression expected in memory reservation expression");
   }
   auto unspec_type = cdk::make_primitive_type(0, cdk::TYPE_UNSPEC);
   auto reference_type = cdk::make_reference_type(4, unspec_type);
@@ -638,13 +638,13 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node* const node,
   ASSERT_UNSPEC;
   node->base()->accept(this, lvl + 2);
   if (!is_typed(node->base()->type(), cdk::TYPE_POINTER)) {
-    throw new std::string("Illegal attempt to index non-pointer expression");
+    throw std::string("Illegal attempt to index non-pointer expression");
   }
   auto reference_type = cdk::reference_type_cast(node->base()->type());
   node->type(reference_type->referenced());
   node->index()->accept(this, lvl + 2);
   if (!is_typed(node->index()->type(), cdk::TYPE_INT)) {
-    throw new std::string("Non integer index for pointer-indexing");
+    throw std::string("Non integer index for pointer-indexing");
   }
 }
 
@@ -652,13 +652,13 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int
   ASSERT_UNSPEC;
   node->tuple()->accept(this, lvl + 2);
   if (!is_typed(node->tuple()->type(), cdk::TYPE_STRUCT)) {
-    throw new std::string("Illegal attempt to index non-tuple expression");
+    throw std::string("Illegal attempt to index non-tuple expression");
   }
 
   size_t idx = node->index();
   auto structured_type = cdk::structured_type_cast(node->tuple()->type());
   if (idx < 1 || idx > structured_type->length()) {
-    throw new std::string("Out of bounds access in tuple");
+    throw std::string("Out of bounds access in tuple");
   }
   node->type(structured_type->component(idx-1));
 }
