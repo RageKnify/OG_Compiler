@@ -528,6 +528,55 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
 }
 
 void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+
+  std::string id;
+  if (node->identifier() == "og") {
+    id = "_main";
+  } else if (node->identifier() == "_main") {
+    id = "._main";
+  } else {
+    id = node->identifier();
+  }
+
+  std::shared_ptr<og::symbol> function = _symtab.find(id);
+
+  cdk::sequence_node* args = node->arguments();
+  std::vector<std::shared_ptr<cdk::basic_type>> &params = function->params();
+
+  size_t argsSize = 0;
+  for (int idxAhead = args->size(); idxAhead > 0; --idxAhead) {
+    auto arg = (cdk::expression_node*)args->node(idxAhead-1);
+    std::shared_ptr<cdk::basic_type> param_type = params[idxAhead-1];
+    arg->accept(this, lvl + 2);
+    if (is_typed(param_type, cdk::TYPE_DOUBLE)) {
+      if (!is_typed(arg->type(), cdk::TYPE_DOUBLE)) {
+        _pf.I2D();
+      }
+    }
+    argsSize += param_type->size();
+  }
+  if (is_typed(node->type(), cdk::TYPE_STRUCT)) {
+    // TODO: need to send address where to write tuple
+    // int addr = ???;
+    // _pf.INT(addr);
+    // argsSize += 4;
+  }
+
+  _pf.CALL(function->name());
+  if (argsSize) {
+    _pf.TRASH(argsSize);
+  }
+
+  if (! (function->type()->name() == cdk::TYPE_DOUBLE)) {
+    _pf.LDFVAL32();
+  }
+  else if (function->type()->name() == cdk::TYPE_VOID) {
+    // No value to fetch
+  }
+  else {
+    _pf.LDFVAL64();
+  }
 }
 
 void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
