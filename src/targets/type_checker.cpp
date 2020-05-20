@@ -613,7 +613,7 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int
   if (idx < 1 || idx > structured_type->length()) {
     throw new std::string("Out of bounds access in tuple");
   }
-  node->type(structured_type->component(idx));
+  node->type(structured_type->component(idx-1));
 }
 
 //---------------------------------------------------------------------------
