@@ -642,7 +642,7 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node* const node,
 void og::type_checker::do_tuple_index_node(og::tuple_index_node* const node, int lvl) {
   ASSERT_UNSPEC;
   node->tuple()->accept(this, lvl + 2);
-  if (!node->tuple()->is_typed(cdk::TYPE_STRUCT)) {
+  if (!is_typed(node->tuple()->type(), cdk::TYPE_STRUCT)) {
     throw new std::string("Illegal attempt to index non-tuple expression");
   }
 

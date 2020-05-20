@@ -339,10 +339,14 @@ void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int l
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->lvalue()->accept(this, lvl);
-  if (is_typed(node->type(), cdk::TYPE_DOUBLE))
+  if (is_typed(node->type(), cdk::TYPE_DOUBLE)) {
     _pf.LDDOUBLE();
-  else
+  } else if (is_typed(node->type(), cdk::TYPE_STRUCT)) {
+    /* do nothing */
+    /* but this prevents unit tuples from being indexed */
+  } else {
     _pf.LDINT();
+  }
 }
 
 void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, int lvl) {
