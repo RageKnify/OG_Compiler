@@ -364,9 +364,7 @@ void og::xml_writer::do_tuple_index_node(og::tuple_index_node * const node, int 
   openTag("tuple", lvl+2);
   node->tuple()->accept(this, lvl+4);
   closeTag("tuple", lvl+2);
-  openTag("index", lvl+2);
-  node->index()->accept(this, lvl+4);
-  closeTag("index", lvl+2);
+  os() << std::string(lvl+2, ' ') << "<index>" << node->index() << "</index>" << std::endl;
   closeTag(node, lvl);
 }
 
