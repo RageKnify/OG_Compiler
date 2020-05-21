@@ -548,11 +548,20 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       _offset += node->varType()->size();
       symbol->offset(-_offset);
 
+      node->type(node->varType());
+
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);
+
+        // For memory reservation_node, it is a pointer, but it doesn't know to what
+        if (node->type()->name() == cdk::TYPE_POINTER && is_typed(node->initializer()->type(), cdk::TYPE_POINTER)) {
+          auto referenced_type = referenced(node->initializer()->type());
+          if (referenced_type->name() == cdk::TYPE_UNSPEC) {
+            node->initializer()->type(node->type());
+          }
+        }
         check_variable_definition(node, symbol);
       }
-      node->type(node->varType());
     } else { // auto dec
       auto tuple = (og::tuple_node*)node->initializer();
       tuple->accept(this, lvl + 2);
