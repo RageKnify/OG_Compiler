@@ -57,7 +57,7 @@ bool og::is_void_pointer(std::shared_ptr<cdk::basic_type> type) {
   return is_typed(type, cdk::TYPE_VOID);
 }
 
-void og::type_checker::hint_type(std::shared_ptr<cdk::basic_type> lt, cdk::typed_node *r) {
+void og::type_checker::hint_type(std::shared_ptr<cdk::basic_type> lt, cdk::typed_node *const r) {
   auto rt = r->type();
   if (is_typed(lt, cdk::TYPE_POINTER) && is_typed(rt, cdk::TYPE_POINTER) // memory reservation hint
       && is_typed(cdk::reference_type_cast(rt)->referenced(), cdk::TYPE_UNSPEC)) {
@@ -378,11 +378,8 @@ void og::type_checker::do_print_node(og::print_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
-  try {
-    // node->argument()->accept(this, lvl);
-  } catch (const std::string &id) {
-    throw "undeclared variable '" + id + "'";
-  }
+  ASSERT_UNSPEC;
+  node->type(cdk::make_primitive_type(0, cdk::TYPE_UNSPEC));
 }
 
 //---------------------------------------------------------------------------
