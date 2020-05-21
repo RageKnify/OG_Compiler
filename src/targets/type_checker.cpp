@@ -17,7 +17,22 @@ bool og::type_checker::deep_type_check(std::shared_ptr<cdk::basic_type> l, std::
     r = referenced(r);
   }
 
-  return l == r;
+  if (l->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(l)->length() == 1) {
+    return deep_type_check(cdk::structured_type_cast(l)->component(0), r);
+  } else if (r->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(r)->length() == 1) {
+    return deep_type_check(l, cdk::structured_type_cast(r)->component(0));
+  } else if (l->name() == cdk::TYPE_STRUCT && r->name() == cdk::TYPE_STRUCT) {
+    auto ls = cdk::structured_type_cast(l);
+    auto rs = cdk::structured_type_cast(r);
+    if (ls->length() != rs->length()) return false;
+
+    for (size_t i = 0; i < ls->length(); i++) {
+      if (!deep_type_check(ls->component(i), rs->component(i))) return false;
+    }
+    return true;
+  } else {
+    return l->name() == r->name();
+  }
 }
 
 bool og::is_typed(std::shared_ptr<cdk::basic_type> type, cdk::typename_type name) {
