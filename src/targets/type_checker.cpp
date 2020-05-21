@@ -633,7 +633,13 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   _offset = 8;
   _in_args = true;
   _symtab.push();
-  if (node->parameters()) node->parameters()->accept(this, lvl + 2);
+  if (node->parameters()) {
+    node->parameters()->accept(this, lvl + 2);
+    for(size_t i = 0; i < parameters->size(); i++) {
+      param_types[i] = ((cdk::typed_node*)parameters->node(i))->type();
+    }
+    function->params(param_types);
+  }
   _in_args = false;
   _offset = 0;
   _function = function;
@@ -735,7 +741,7 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
   ASSERT_UNSPEC;
   const auto &ids = node->identifiers();
-  if (_function) {
+  if (_function || _in_args) {
     if (!node->is_auto()) {
       std::string id = *ids->at(0);
 
