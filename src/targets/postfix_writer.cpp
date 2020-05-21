@@ -667,9 +667,20 @@ void og::postfix_writer::do_nullptr_node(og::nullptr_node* const node, int lvl) 
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
-  /* TODO: IMPLEMENT */
-  _pf.INT(0);
-  _pf.STFVAL32();
+  if (_function->type()->name() == cdk::TYPE_VOID) {
+    // Do nothing
+  }
+  else if (_function->type()->name() == cdk::TYPE_STRUCT) {
+    // TODO: tuple return type
+  }
+  else if (_function->type()->name() == cdk::TYPE_DOUBLE) {
+    node->retval()->accept(this, lvl + 2);
+    _pf.STFVAL64();
+  }
+  else {
+    node->retval()->accept(this, lvl + 2);
+    _pf.STFVAL32();
+  }
   _pf.LEAVE();
   _pf.RET();
 }
@@ -900,5 +911,7 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, i
 
 void og::postfix_writer::do_tuple_node(og::tuple_node* const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // empty
+  if (node->members()->size() == 1) {
+    node->members()->node(0)->accept(this, lvl + 2);
+  }
 }

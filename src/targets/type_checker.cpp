@@ -652,6 +652,69 @@ void og::type_checker::do_nullptr_node(og::nullptr_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
+  ASSERT_UNSPEC;
+
+  if (node->retval()) {
+    // return exprs;
+    node->retval()->accept(this, lvl + 2);
+    node->type(node->retval()->type());
+
+    if (node->type()->name() != cdk::TYPE_STRUCT) {
+      // non tuple return type
+      if (_function->type()->name() == cdk::TYPE_UNSPEC) {
+        _function->type(node->type());
+        return;
+      }
+      if (assignment_compatible(_function->type(), node->type())) {
+        // Do nothing
+      }
+      else if (assignment_compatible(node->type(), _function->type())) {
+        _function->type(node->type());
+      }
+      else {
+        throw "Incompatible types in return: " + cdk::to_string(node->type()) + " and " +
+          cdk::to_string(_function->type());
+      }
+    }
+    else {
+      // tuple return type
+      if (_function->type()->name() == cdk::TYPE_UNSPEC) {
+        _function->type(node->type());
+        return;
+      }
+      auto return_type = cdk::structured_type_cast(_function->type());
+      auto node_type = cdk::structured_type_cast(node->type());
+      if (return_type->length() != node_type->length()) {
+        throw "Incompatible types in return: " + cdk::to_string(node_type) + " and " +
+          cdk::to_string(return_type);
+      }
+      auto return_types = return_type->components();
+      auto node_types = node_type->components();
+      for (size_t i = 0; i < return_type->length(); ++i) {
+        auto inner_ret_type = return_types[i];
+        auto inner_node_type = node_types[i];
+        if (assignment_compatible(inner_ret_type, inner_node_type)) {
+          // Do nothing
+        }
+        else if (assignment_compatible(inner_node_type, inner_ret_type)) {
+          return_types[i] = inner_node_type;
+        }
+        else {
+          throw "Incompatible types in return: " + cdk::to_string(inner_node_type) + " and " +
+            cdk::to_string(inner_ret_type);
+        }
+      }
+    }
+  }
+  else {
+    node->type(cdk::make_primitive_type(0, cdk::TYPE_VOID));
+    if (_function->type()->name() == cdk::TYPE_UNSPEC) {
+      _function->type(node->type());
+    }
+    else if (_function->type()->name() != cdk::TYPE_VOID) {
+      throw std::string("Empty return for " + _function->name());
+    }
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -881,8 +944,7 @@ void og::type_checker::do_tuple_node(og::tuple_node* const node, int lvl) {
   ASSERT_UNSPEC;
   std::vector<std::shared_ptr<cdk::basic_type>> types;
   node->members()->accept(this, lvl + 2);
-  if (node->members()->size() == 1 &&
-      (((cdk::expression_node*)node->members()->node(0))->is_typed(cdk::TYPE_STRUCT))) { // avoid creating a nested unit tuple
+  if (node->members()->size() == 1) { // avoid creating unit tuple
     node->type(((cdk::expression_node*)node->members()->node(0))->type());
   } else {
     for (size_t i = 0; i < node->members()->size(); i++) {
