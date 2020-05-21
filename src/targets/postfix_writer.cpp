@@ -671,8 +671,8 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
       reset_new_symbol();
     }
   }
-  else {
-    if (new_symbol()) {
+  else { // global
+    if (!node->is_auto() && new_symbol()) {
       _uninitialized_vars.insert(new_symbol()->name());
       reset_new_symbol();
     }
