@@ -430,17 +430,20 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
   std::shared_ptr<og::symbol> previous = _symtab.find(function->name());
 
   if (previous) {
-    if (previous->qualifier() == node->qualifier()) {
-      if (parameters != nullptr) {
+    if (function->params().size() == previous->params().size()) {
+      if (function->params().size()) {
         check_function_declaration(node, previous);
         for(size_t i = 0; i < parameters->size(); i++) {
-          if (!deep_type_check(((cdk::typed_node*)parameters->node(i))->type(), previous->params().at(i))) {
-            throw std::string("conflicting declaration for '" + function->name() + "'");
+          if (!deep_type_check(function->params().at(i), previous->params().at(i))) {
+            throw std::string("Conflicting declaration for '" + node->identifier() + "'");
           }
         }
       }
     } else {
-      throw std::string("conflicting declaration for '" + function->name() + "'");
+      std::ostringstream oss;
+      oss << "Function '" << node->identifier() << "' first declared with ";
+      oss << function->params().size() << " parameters then with " << previous->params().size();
+      throw oss.str();
     }
   } else {
     _symtab.insert(function->name(), function);
@@ -521,9 +524,89 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
+  _symtab.push();
+  if (node->declarations()) node->declarations()->accept(this, lvl+2);
+  if (node->instructions()) node->instructions()->accept(this, lvl+2);
+  _symtab.pop();
 }
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+  std::string id;
+  if (node->identifier() == "og") {
+    id = "_main";
+  } else if (node->identifier() == "_main") {
+    id = "._main";
+  } else {
+    id = node->identifier();
+  }
+
+  std::vector<std::shared_ptr<cdk::basic_type>> param_types;
+  cdk::sequence_node *parameters = node->parameters();
+  if (parameters != nullptr) {
+    for(size_t i = 0; i < parameters->size(); i++) {
+      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+    }
+  }
+
+  std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
+      node->type(),
+      id,
+      0,
+      node->qualifier(),
+      true,
+      true,
+      true,
+      param_types
+      );
+
+  std::shared_ptr<og::symbol> previous = _symtab.find(function->name());
+  if (previous) {
+    if (!previous->is_function()) {
+      std::ostringstream oss;
+      oss << "Redeclaration of variable '" << previous->name() << "' as function";
+      throw oss.str();
+    }
+    if (previous->defined()) {
+      std::ostringstream oss;
+      oss << "Redefinition of function '" << node->identifier() << "'";
+      throw oss.str();
+    }
+    if (!deep_type_check(previous->type(), node->type())) {
+      std::ostringstream oss;
+      oss << "Definition of function '" << previous->name() << "' with different type from declaration: ";
+      oss << cdk::to_string(previous->type()) << " and ";
+      oss << cdk::to_string(node->type());
+      throw oss.str();
+    }
+    if (previous->qualifier() != node->qualifier())
+    {
+      throw std::string("Definition of function with different qualifier from declaration");
+    }
+    if (function->params().size() == previous->params().size()) {
+      if (function->params().size()) {
+        for(size_t i = 0; i < parameters->size(); i++) {
+          if (!deep_type_check(function->params().at(i), previous->params().at(i))) {
+            throw std::string("Conflicting definition for '" + node->identifier() + "'");
+          }
+        }
+      }
+    } else {
+      std::ostringstream oss;
+      oss << "Function '" << node->identifier() << "' first declared with ";
+      oss << function->params().size() << " parameters then with " << previous->params().size();
+      throw oss.str();
+    }
+  }
+
+  if (previous) {
+    _symtab.replace(function->name(), function);
+  }
+  else {
+    _symtab.insert(function->name(), function);
+  }
+
+  _function = function;
+  node->block()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------
@@ -567,8 +650,14 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         throw std::string("Redeclaration of local variable: ") + id;
       _parent->set_new_symbol(symbol);
 
-      _offset += node->varType()->size();
-      symbol->offset(-_offset);
+      if (_in_args) {
+        symbol->offset(_offset);
+        _offset += node->varType()->size();
+      }
+      else {
+        _offset += node->varType()->size();
+        symbol->offset(-_offset);
+      }
 
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);

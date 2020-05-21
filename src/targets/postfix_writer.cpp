@@ -588,37 +588,12 @@ void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
 }
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
-  /* TODO: IMPLEMENT */
-  std::string id;
+  ASSERT_SAFE_EXPRESSIONS;
 
-  if (node->identifier() == "og") {
-    id = "_main";
-  } else if (node->identifier() == "_main") {
-    id = "._main";
-  } else {
-    id = node->identifier();
+  if (_function->qualifier() == tPUBLIC) {
+    _pf.GLOBAL(_function->name(), _pf.FUNC());
   }
-  _pf.GLOBAL(id, _pf.FUNC());
-  _pf.LABEL(id);
-
-  std::vector<std::shared_ptr<cdk::basic_type>> param_types;
-  cdk::sequence_node *parameters = node->parameters();
-  if (parameters != nullptr) {
-    for(size_t i = 0; i < parameters->size(); i++) {
-      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
-    }
-  }
-
-  std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
-      node->type(),
-      id,
-      0,
-      node->qualifier(),
-      true,
-      true,
-      true,
-      param_types
-      );
+  _pf.LABEL(_function->name());
 
   frame_size_calculator lsc(_compiler);
   node->accept(&lsc, lvl);
@@ -629,11 +604,25 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
     _pf.START();
   }
 
-  _function = function;
+  _symtab.push(); // args scope
 
+  _in_args = true;
+  _offset = 8;
+  if (_function->type()->name() == cdk::TYPE_STRUCT) {
+    _offset += 4;
+  }
+  if (node->parameters()) {
+    node->parameters()->accept(this, lvl + 2);
+  }
+  _in_args = false;
+
+
+  _offset = 0;
   node->block()->accept(this, lvl+2);
 
-  _function = NULL;
+  _symtab.pop();  // args scope
+
+  _function = nullptr;
   _offset = 0;
 
   _pf.LEAVE();

@@ -22,8 +22,6 @@ protected:
   //! The owner compiler
   std::shared_ptr<cdk::compiler> _compiler;
 
-  std::shared_ptr<og::symbol> _function;
-
 private:
 
   // last symbol inserted in symbol table
@@ -31,7 +29,7 @@ private:
 
 protected:
   basic_ast_visitor(std::shared_ptr<cdk::compiler> compiler) :
-      _compiler(compiler), _function(NULL) {
+      _compiler(compiler) {
   }
 
   bool debug() {
