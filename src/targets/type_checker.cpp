@@ -57,6 +57,19 @@ bool og::is_void_pointer(std::shared_ptr<cdk::basic_type> type) {
   return is_typed(type, cdk::TYPE_VOID);
 }
 
+void og::type_checker::hint_type(cdk::typed_node *l, cdk::typed_node *r) {
+  auto lt = l->type();
+  auto rt = r->type();
+  if (is_typed(lt, cdk::TYPE_POINTER) && is_typed(rt, cdk::TYPE_POINTER) // memory reservation hint
+      && is_typed(cdk::reference_type_cast(rt)->referenced(), cdk::TYPE_UNSPEC)) {
+    r->type(lt);
+  }
+  else if ((is_typed(lt, cdk::TYPE_INT) || is_typed(lt, cdk::TYPE_DOUBLE)) && // input hint
+            is_typed(rt, cdk::TYPE_UNSPEC)) {
+    r->type(lt);
+  }
+}
+
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl) {
@@ -343,13 +356,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->lvalue()->accept(this, lvl);
   node->rvalue()->accept(this, lvl + 2);
 
-  // For memory reservation_node, it is a pointer, but it doesn't know to what
-  if (node->rvalue()->type()->name() == cdk::TYPE_POINTER && is_typed(node->lvalue()->type(), cdk::TYPE_POINTER)) {
-    auto referenced_type = referenced(node->rvalue()->type());
-    if (referenced_type->name() == cdk::TYPE_UNSPEC) {
-      node->rvalue()->type(node->lvalue()->type());
-    }
-  }
+  hint_type(node->lvalue(), node->rvalue());
 
   if (!assignment_compatible(node->lvalue()->type(), node->rvalue()->type())) {
     throw "Incompatible types in assignment: " + cdk::to_string(node->lvalue()->type()) + " and " +
@@ -543,7 +550,7 @@ void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
   _symtab.push();
   if (node->declarations()) node->declarations()->accept(this, lvl + 2);
   if (node->instructions()) node->instructions()->accept(this, lvl + 2);
-  _symtab.push();
+  _symtab.pop();
 }
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
@@ -600,13 +607,8 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);
 
-        // For memory reservation_node, it is a pointer, but it doesn't know to what
-        if (node->type()->name() == cdk::TYPE_POINTER && is_typed(node->initializer()->type(), cdk::TYPE_POINTER)) {
-          auto referenced_type = referenced(node->initializer()->type());
-          if (referenced_type->name() == cdk::TYPE_UNSPEC) {
-            node->initializer()->type(node->type());
-          }
-        }
+        hint_type(node, node->initializer());
+
         check_variable_definition(node, symbol);
       }
     } else { // auto dec
