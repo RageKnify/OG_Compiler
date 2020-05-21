@@ -57,8 +57,7 @@ bool og::is_void_pointer(std::shared_ptr<cdk::basic_type> type) {
   return is_typed(type, cdk::TYPE_VOID);
 }
 
-void og::type_checker::hint_type(cdk::typed_node *l, cdk::typed_node *r) {
-  auto lt = l->type();
+void og::type_checker::hint_type(std::shared_ptr<cdk::basic_type> lt, cdk::typed_node *r) {
   auto rt = r->type();
   if (is_typed(lt, cdk::TYPE_POINTER) && is_typed(rt, cdk::TYPE_POINTER) // memory reservation hint
       && is_typed(cdk::reference_type_cast(rt)->referenced(), cdk::TYPE_UNSPEC)) {
@@ -356,7 +355,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->lvalue()->accept(this, lvl);
   node->rvalue()->accept(this, lvl + 2);
 
-  hint_type(node->lvalue(), node->rvalue());
+  hint_type(node->lvalue()->type(), node->rvalue());
 
   if (!assignment_compatible(node->lvalue()->type(), node->rvalue()->type())) {
     throw "Incompatible types in assignment: " + cdk::to_string(node->lvalue()->type()) + " and " +
@@ -526,6 +525,8 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
         auto arg = (cdk::expression_node*)args->node(i);
         std::shared_ptr<cdk::basic_type> param_type = params[i];
 
+        hint_type(param_type, arg);
+
         if (!assignment_compatible(param_type, arg->type())) {
           std::ostringstream oss;
           oss << "function '" << node->identifier() << "' expected argument of type `";
@@ -607,7 +608,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);
 
-        hint_type(node, node->initializer());
+        hint_type(node->type(), node->initializer());
 
         check_variable_definition(node, symbol);
       }
