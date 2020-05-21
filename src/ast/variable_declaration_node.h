@@ -8,7 +8,7 @@
 
 namespace og {
 
-	class variable_declaration_node: public cdk::basic_node {
+	class variable_declaration_node: public cdk::typed_node {
 		typedef std::vector<std::string*> identifiers_type;
 
 		int _qualifier;
@@ -19,7 +19,7 @@ namespace og {
 	public:
 		variable_declaration_node(int lineno, int qualifier, cdk::basic_type* varType,
 				identifiers_type* identifiers, cdk::expression_node* initializer) :
-			basic_node(lineno), _qualifier(qualifier), _varType(varType), _identifiers(identifiers),
+			typed_node(lineno), _qualifier(qualifier), _varType(varType), _identifiers(identifiers),
 			_initializer(initializer) {
 			}
 	public:

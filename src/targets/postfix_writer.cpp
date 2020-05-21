@@ -339,10 +339,14 @@ void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int l
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->lvalue()->accept(this, lvl);
-  if (is_typed(node->type(), cdk::TYPE_DOUBLE))
+  if (is_typed(node->type(), cdk::TYPE_DOUBLE)) {
     _pf.LDDOUBLE();
-  else
+  } else if (is_typed(node->type(), cdk::TYPE_STRUCT)) {
+    /* do nothing */
+    /* but this prevents unit tuples from being indexed */
+  } else {
     _pf.LDINT();
+  }
 }
 
 void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, int lvl) {
@@ -420,6 +424,7 @@ void og::postfix_writer::do_read_node(og::read_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   int old_for_incr = _for_incr;
   int old_for_end = _for_end;
 
@@ -430,7 +435,6 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
   _symtab.push();
   if (node->inits()) node->inits()->accept(this, lvl + 2);
 
-  ASSERT_SAFE_EXPRESSIONS;
 
   _pf.LABEL(mklbl(for_cond));
   if (node->condition()) {
@@ -519,9 +523,9 @@ void og::postfix_writer::do_memory_reservation_node(og::memory_reservation_node 
 void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
 
-  if (!new_symbol()) return;
+  std::shared_ptr<og::symbol> function = pop_symbol();
+  if (!function) return;
 
-  std::shared_ptr<og::symbol> function = new_symbol();
   if (function->qualifier() == tREQUIRE) {
     _functions_to_declare.insert(function->name());
   }
@@ -677,8 +681,9 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
   if (_function) {
     if (node->initializer()) {
       if (!node->is_auto()) {
-        std::string id = new_symbol()->name();
-        int offset = new_symbol()->offset();
+        auto sym = pop_symbol();
+        _symtab.insert(sym->name(), sym);
+        int offset = sym->offset();
         node->initializer()->accept(this, lvl + 2);
         if (is_typed(node->varType(), cdk::TYPE_DOUBLE)) {
           if (!is_typed(node->initializer()->type(), cdk::TYPE_DOUBLE)) {
@@ -691,17 +696,63 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.LOCAL(offset);
           _pf.STINT();
         }
+      } else { // auto dec
+        const auto &ids = node->identifiers();
+        auto tuple = (og::tuple_node*)node->initializer();
+        if (ids->size() > 1) { // explode tuple
+          for (size_t i = 0; i < tuple->members()->size(); i++) {
+            auto sym = pop_symbol();
+            int offset = sym->offset();
+            _symtab.insert(sym->name(), sym);
+            auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+            expr->accept(this, lvl + 2);
+
+            if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+              _pf.LOCAL(offset);
+              _pf.STDOUBLE();
+            }
+            else {
+              _pf.LOCAL(offset);
+              _pf.STINT();
+            }
+          }
+        } else { // non-explosion
+          auto sym = pop_symbol();
+          int offset = sym->offset();
+          _symtab.insert(sym->name(), sym);
+          for (size_t i = 0; i < tuple->members()->size(); i++) {
+            auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+            expr->accept(this, lvl + 2);
+
+            if (is_typed(expr->type(), cdk::TYPE_STRUCT)) {
+              /* TODO: Tuple function call */
+              /* Minor problem, since the tuple is the function's TYPE_STRUCT, this condition will never be true for `auto a = f()`*/
+              /* By allowing nested unit tuples, this should work */
+            } else if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+              _pf.LOCAL(offset);
+              _pf.STDOUBLE();
+            }
+            else {
+              _pf.LOCAL(offset);
+              _pf.STINT();
+            }
+
+            offset += expr->type()->size();
+          }
+        }
       }
-      else {
-        /* TODO: tuple */
-      }
+    } else { // local variable without initial value
+      auto sym = pop_symbol();
+      _symtab.insert(sym->name(), sym);
     }
   }
-  else {
-    /* TODO: must handle case in which many symbols are created */
-    if (new_symbol()) {
-      _uninitialized_vars.insert(new_symbol()->name());
-      reset_new_symbol();
+  else { // global
+    if (!node->is_auto()) {
+      auto sym = pop_symbol();
+      if (sym) {
+        _symtab.insert(sym->name(), sym);
+        _uninitialized_vars.insert(sym->name());
+      }
     }
 
     if (node->initializer()) {
@@ -716,6 +767,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.LABEL(mklbl(lbl = ++_lbl));
           _pf.SSTRING(s->value());
           _pf.DATA();
+          _pf.ALIGN();
           _pf.LABEL(id);
           _pf.SADDR(mklbl(lbl));
         }
@@ -745,12 +797,69 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           _pf.SINT(i->value());
         }
 
-        _pf.TEXT();
       }
-      else {
-        /* TODO: tuple */
-      }
+      else { // tuple
+        const auto &ids = node->identifiers();
+        auto tuple = (og::tuple_node*)node->initializer();
+        std::string id;
 
+        if (ids->size() == 1) { // non-explosion
+          id = *ids->at(0);
+          _pf.DATA();
+          _pf.LABEL(id);
+          _uninitialized_vars.erase(id);
+          auto sym = pop_symbol();
+          _symtab.insert(sym->name(), sym);
+        }
+
+        for (size_t i = 0; i < tuple->members()->size(); i++) {
+          auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+          if (ids->size() != 1) { // <=> explosion
+            id = *ids->at(i);
+            auto sym = pop_symbol();
+            _symtab.insert(sym->name(), sym);
+          }
+          _uninitialized_vars.erase(id);
+
+          if (is_typed(expr->type(), cdk::TYPE_STRING)) {
+            int lbl;
+            cdk::string_node *s = dynamic_cast<cdk::string_node *>(expr);
+            _pf.RODATA();
+            _pf.ALIGN();
+            _pf.LABEL(mklbl(lbl = ++_lbl));
+            _pf.SSTRING(s->value());
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            _pf.SADDR(mklbl(lbl));
+          }
+          else if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            cdk::double_node *d = dynamic_cast<cdk::double_node *>(expr);
+            if (d) {
+              _pf.SDOUBLE(d->value());
+            } else {
+              cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(expr);
+              _pf.SDOUBLE(i->value());
+            }
+          }
+          else if (is_typed(expr->type(), cdk::TYPE_POINTER)) {
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            _pf.SINT(0); // only nullptr literal
+          }
+          else if (is_typed(expr->type(), cdk::TYPE_INT)) {
+            cdk::integer_node *i = dynamic_cast<cdk::integer_node *>(expr);
+            _pf.DATA();
+            _pf.ALIGN();
+            if (ids->size() != 1) _pf.LABEL(id);
+            _pf.SINT(i->value());
+          }
+        }
+      }
       _pf.TEXT();
     }
   }
@@ -779,7 +888,7 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, i
   size_t idx = node->index();
   size_t jump = 0;
   for (size_t i = 0; i < idx - 1; ++i) { // idx - 1 because tuples start at 1
-    jump += structured_type->component(idx)->size();
+    jump += structured_type->component(i)->size();
   }
   if (jump) {
     _pf.INT(jump);

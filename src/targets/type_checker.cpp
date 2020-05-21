@@ -17,7 +17,22 @@ bool og::type_checker::deep_type_check(std::shared_ptr<cdk::basic_type> l, std::
     r = referenced(r);
   }
 
-  return l == r;
+  if (l->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(l)->length() == 1) {
+    return deep_type_check(cdk::structured_type_cast(l)->component(0), r);
+  } else if (r->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(r)->length() == 1) {
+    return deep_type_check(l, cdk::structured_type_cast(r)->component(0));
+  } else if (l->name() == cdk::TYPE_STRUCT && r->name() == cdk::TYPE_STRUCT) {
+    auto ls = cdk::structured_type_cast(l);
+    auto rs = cdk::structured_type_cast(r);
+    if (ls->length() != rs->length()) return false;
+
+    for (size_t i = 0; i < ls->length(); i++) {
+      if (!deep_type_check(ls->component(i), rs->component(i))) return false;
+    }
+    return true;
+  } else {
+    return l->name() == r->name();
+  }
 }
 
 bool og::is_typed(std::shared_ptr<cdk::basic_type> type, cdk::typename_type name) {
@@ -367,8 +382,11 @@ void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
+  _symtab.push();
+  if (node->inits()) node->inits()->accept(this, lvl + 2);
   if (node->condition()) node->condition()->accept(this, lvl + 2);
   if (node->incrs()) node->incrs()->accept(this, lvl + 2);
+  _symtab.pop();
 }
 
 //---------------------------------------------------------------------------
@@ -445,9 +463,10 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
       oss << function->params().size() << " parameters then with " << previous->params().size();
       throw oss.str();
     }
+    _parent->push_symbol(nullptr);
   } else {
     _symtab.insert(function->name(), function);
-    _parent->set_new_symbol(function);
+    _parent->push_symbol(function);
   }
 }
 
@@ -525,8 +544,8 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
 
 void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
   _symtab.push();
-  if (node->declarations()) node->declarations()->accept(this, lvl+2);
-  if (node->instructions()) node->instructions()->accept(this, lvl+2);
+  if (node->declarations()) node->declarations()->accept(this, lvl + 2);
+  if (node->instructions()) node->instructions()->accept(this, lvl + 2);
   _symtab.pop();
 }
 
@@ -638,6 +657,7 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+  ASSERT_UNSPEC;
   const auto &ids = node->identifiers();
   if (_function) {
     if (!node->is_auto()) {
@@ -648,7 +668,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       symbol->qualifier(node->qualifier());
       if(!_symtab.insert(symbol->name(), symbol))
         throw std::string("Redeclaration of local variable: ") + id;
-      _parent->set_new_symbol(symbol);
+      _parent->push_symbol(symbol);
 
       if (_in_args) {
         symbol->offset(_offset);
@@ -659,14 +679,56 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         symbol->offset(-_offset);
       }
 
+      node->type(node->varType());
+
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);
+
+        // For memory reservation_node, it is a pointer, but it doesn't know to what
+        if (node->type()->name() == cdk::TYPE_POINTER && is_typed(node->initializer()->type(), cdk::TYPE_POINTER)) {
+          auto referenced_type = referenced(node->initializer()->type());
+          if (referenced_type->name() == cdk::TYPE_UNSPEC) {
+            node->initializer()->type(node->type());
+          }
+        }
         check_variable_definition(node, symbol);
       }
-    } else {
-      /* TODO: tuple declaration */
+    } else { // auto dec
+      auto tuple = (og::tuple_node*)node->initializer();
+      tuple->accept(this, lvl + 2);
+      if (ids->size() > 1) { // explode tuple
+        if (ids->size() != tuple->members()->size()) {
+          throw "Auto declaration with wrong number of elements: left " + std::to_string(ids->size()) +
+                ", right " + std::to_string(tuple->members()->size());
+        }
+        for (size_t i = 0; i < ids->size(); i++) {
+          std::string id = *ids->at(i);
+
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple->members()->node(i))->type();
+          std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(type, id);
+          symbol->global(false);
+          symbol->qualifier(node->qualifier());
+          if(!_symtab.insert(symbol->name(), symbol))
+            throw std::string("Redeclaration of local variable: ") + id;
+          _parent->push_symbol(symbol);
+          _offset += type->size();
+          symbol->offset(-_offset);
+        }
+      } else { // non-explosion
+          std::string id = *ids->at(0);
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple)->type();
+          std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(type, id);
+          symbol->global(false);
+          symbol->qualifier(node->qualifier());
+          if(!_symtab.insert(symbol->name(), symbol))
+            throw std::string("Redeclaration of local variable: ") + id;
+          _parent->push_symbol(symbol);
+          _offset += type->size();
+          symbol->offset(-_offset);
+      }
+      node->type(tuple->type());
     }
-  } else {
+  } else { // outside function
     if (!node->is_auto()) {
       std::string id = *ids->at(0);
       std::shared_ptr<og::symbol> symbol = _symtab.find(id);
@@ -676,35 +738,80 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         symbol->global(true);
         symbol->qualifier(node->qualifier());
         _symtab.insert(symbol->name(), symbol);
-        _parent->set_new_symbol(symbol);
       } else {
-        check_variable_declaration(node, symbol);
+        check_variable_declaration(node, symbol, node->varType());
       }
+      _parent->push_symbol(symbol);
 
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);
         check_variable_definition(node, symbol);
         symbol->defined(true);
       }
-    } else {
-      /* TODO: tuple declaration */
+      node->type(node->varType());
+    } else { // auto dec
+      auto tuple = (og::tuple_node*)node->initializer();
+      tuple->accept(this, lvl + 2);
+      if (ids->size() > 1) { // explode tuple
+        if (ids->size() != tuple->members()->size()) {
+          throw "Auto declaration with wrong number of elements: left " + std::to_string(ids->size()) +
+                ", right " + std::to_string(tuple->members()->size());
+        }
+        for (size_t i = 0; i < ids->size(); i++) {
+          std::string id = *ids->at(i);
+          std::shared_ptr<og::symbol> symbol = _symtab.find(id);
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple->members()->node(i))->type();
+
+          if (symbol == nullptr) {
+            symbol = std::make_shared<og::symbol>(type, id);
+            symbol->global(true);
+            symbol->qualifier(node->qualifier());
+            _symtab.insert(symbol->name(), symbol);
+          } else {
+            check_variable_declaration(node, symbol, type);
+          }
+          _parent->push_symbol(symbol);
+
+          node->initializer()->accept(this, lvl + 2);
+          check_variable_definition(node, symbol);
+          symbol->defined(true);
+        }
+      } else { // non-explosion
+          std::string id = *ids->at(0);
+          std::shared_ptr<og::symbol> symbol = _symtab.find(id);
+          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple)->type();
+          if (symbol == nullptr) {
+            symbol = std::make_shared<og::symbol>(type, id);
+            symbol->global(true);
+            symbol->qualifier(node->qualifier());
+            _symtab.insert(symbol->name(), symbol);
+          } else {
+            check_variable_declaration(node, symbol, type);
+          }
+          _parent->push_symbol(symbol);
+
+          node->initializer()->accept(this, lvl + 2);
+          check_variable_definition(node, symbol);
+          symbol->defined(true);
+      }
+      node->type(tuple->type());
     }
   }
 }
 
-void og::type_checker::check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol) {
+void og::type_checker::check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol, std::shared_ptr<cdk::basic_type> type) {
   if (symbol->is_function())
   {
     std::ostringstream oss;
     oss << "Redeclaration of function '" << symbol->name() << "' as variable";
     throw oss.str();
   }
-  else if (!deep_type_check(symbol->type(), node->varType()))
+  else if (!deep_type_check(symbol->type(), type))
   {
     std::ostringstream oss;
     oss << "Redeclaration of variable '" << symbol->name() << "' with different types: ";
     oss << cdk::to_string(symbol->type()) << " and ";
-    oss << cdk::to_string(node->varType());
+    oss << cdk::to_string(type);
     throw oss.str();
   }
   else if (symbol->qualifier() != node->qualifier())
@@ -720,7 +827,7 @@ void og::type_checker::check_variable_definition(og::variable_declaration_node *
     oss << "Redefinition of variable '" << symbol->name() << "'";
     throw oss.str();
   }
-  else if (!assignment_compatible(symbol->type(), node->initializer()->type()))
+  else if (!node->varType()->name() == cdk::TYPE_UNSPEC && !assignment_compatible(symbol->type(), node->initializer()->type()))
   {
     std::ostringstream oss;
     oss << "Wrong types for definition: ";
