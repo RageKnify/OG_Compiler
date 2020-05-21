@@ -431,12 +431,19 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
   }
 
   std::vector<std::shared_ptr<cdk::basic_type>> param_types;
+
+  _symtab.push(); // Don't polute the global scope
+  _in_args = true;
   cdk::sequence_node *parameters = node->parameters();
   if (parameters != nullptr) {
+    parameters->accept(this, lvl + 2);
     for(size_t i = 0; i < parameters->size(); i++) {
       param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+      _parent->pop_symbol();
     }
   }
+  _in_args = false;
+  _symtab.pop();
 
   std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
       node->type(),
@@ -566,11 +573,6 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
 
   std::vector<std::shared_ptr<cdk::basic_type>> param_types;
   cdk::sequence_node *parameters = node->parameters();
-  if (parameters != nullptr) {
-    for(size_t i = 0; i < parameters->size(); i++) {
-      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
-    }
-  }
 
   std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
       node->type(),
@@ -606,6 +608,28 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
     {
       throw std::string("Definition of function with different qualifier from declaration");
     }
+  }
+
+  if (previous) {
+    _symtab.replace(function->name(), function);
+  }
+  else {
+    _symtab.insert(function->name(), function);
+  }
+
+  _offset = 8;
+  _in_args = true;
+  _symtab.push();
+  if (node->parameters()) {
+    node->parameters()->accept(this, lvl + 2);
+    for(size_t i = 0; i < parameters->size(); i++) {
+      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+    }
+    function->params(param_types);
+  }
+  _in_args = false;
+
+  if (previous) {
     if (function->params().size() == previous->params().size()) {
       if (function->params().size()) {
         for(size_t i = 0; i < parameters->size(); i++) {
@@ -622,25 +646,6 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
     }
   }
 
-  if (previous) {
-    _symtab.replace(function->name(), function);
-  }
-  else {
-    _symtab.insert(function->name(), function);
-  }
-
-
-  _offset = 8;
-  _in_args = true;
-  _symtab.push();
-  if (node->parameters()) {
-    node->parameters()->accept(this, lvl + 2);
-    for(size_t i = 0; i < parameters->size(); i++) {
-      param_types[i] = ((cdk::typed_node*)parameters->node(i))->type();
-    }
-    function->params(param_types);
-  }
-  _in_args = false;
   _offset = 0;
   _function = function;
   node->block()->accept(this, lvl + 2);
