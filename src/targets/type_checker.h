@@ -49,6 +49,7 @@ namespace og {
     void check_variable_declaration(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol, std::shared_ptr<cdk::basic_type> type);
     void check_variable_definition(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
     void check_function_declaration(og::function_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
+    void hint_type(std::shared_ptr<cdk::basic_type> lt, cdk::typed_node *const r);
 
   public:
     // do not edit these lines
