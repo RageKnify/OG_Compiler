@@ -629,8 +629,16 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
     _symtab.insert(function->name(), function);
   }
 
+
+  _offset = 8;
+  _in_args = true;
+  _symtab.push();
+  if (node->parameters()) node->parameters()->accept(this, lvl + 2);
+  _in_args = false;
+  _offset = 0;
   _function = function;
   node->block()->accept(this, lvl + 2);
+  _symtab.pop();
 }
 
 //---------------------------------------------------------------------------

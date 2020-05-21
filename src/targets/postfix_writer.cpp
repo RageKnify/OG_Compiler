@@ -616,17 +616,12 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _symtab.push(); // args scope
 
   _in_args = true;
-  _offset = 8;
-  if (_function->type()->name() == cdk::TYPE_STRUCT) {
-    _offset += 4;
-  }
   if (node->parameters()) {
     node->parameters()->accept(this, lvl + 2);
   }
   _in_args = false;
 
 
-  _offset = 0;
   node->block()->accept(this, lvl+2);
 
   _symtab.pop();  // args scope
@@ -694,6 +689,15 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
 
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+  if (_in_args) {
+    auto sym = pop_symbol();
+
+    if (_function->type()->name() == cdk::TYPE_STRUCT)
+      sym->offset(sym->offset() + 4);
+
+    _symtab.insert(sym->name(), sym);
+    return;
+  }
   if (_function) {
     if (node->initializer()) {
       if (!node->is_auto()) {
