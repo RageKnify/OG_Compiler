@@ -138,7 +138,6 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
   openTag(node, lvl);
 
   node->lvalue()->accept(this, lvl);
-  reset_new_symbol();
 
   node->rvalue()->accept(this, lvl + 4);
   closeTag(node, lvl);
