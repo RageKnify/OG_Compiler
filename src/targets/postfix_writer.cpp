@@ -675,6 +675,9 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           }
         }
       }
+    } else { // local variable without initial value
+      auto sym = pop_symbol();
+      _symtab.insert(sym->name(), sym);
     }
   }
   else { // global
