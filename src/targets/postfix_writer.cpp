@@ -415,10 +415,15 @@ void og::postfix_writer::do_print_node(og::print_node * const node, int lvl) {
 
 void og::postfix_writer::do_read_node(og::read_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  _pf.CALL("readi");
-  _pf.LDFVAL32();
-  // node->argument()->accept(this, lvl);
-  _pf.STINT();
+  if (is_typed(node->type(), cdk::TYPE_DOUBLE)) {
+    _functions_to_declare.insert("readd");
+    _pf.CALL("readd");
+    _pf.LDFVAL64();
+  } else {
+    _functions_to_declare.insert("readi");
+    _pf.CALL("readi");
+    _pf.LDFVAL32();
+  }
 }
 
 //---------------------------------------------------------------------------
