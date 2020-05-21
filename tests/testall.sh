@@ -34,6 +34,7 @@ testone() {
 		printf '%b' "Test $name -- ${green}OK$reset\n"
 	else
 		printf '%b' "Test $name -- ${red}FAILED${reset}\n"
+		cat $input
 		diff --color -b $expected $out
 		printf '%b' "$reset"
 		exit 1
