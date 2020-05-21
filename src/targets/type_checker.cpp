@@ -367,8 +367,11 @@ void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
+  _symtab.push();
+  if (node->inits()) node->inits()->accept(this, lvl + 2);
   if (node->condition()) node->condition()->accept(this, lvl + 2);
   if (node->incrs()) node->incrs()->accept(this, lvl + 2);
+  _symtab.pop();
 }
 
 //---------------------------------------------------------------------------
@@ -442,9 +445,10 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
     } else {
       throw std::string("conflicting declaration for '" + function->name() + "'");
     }
+    _parent->push_symbol(nullptr);
   } else {
     _symtab.insert(function->name(), function);
-    _parent->set_new_symbol(function);
+    _parent->push_symbol(function);
   }
 }
 
@@ -474,9 +478,14 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
+  _symtab.push();
+  if (node->declarations()) node->declarations()->accept(this, lvl + 2);
+  if (node->instructions()) node->instructions()->accept(this, lvl + 2);
+  _symtab.push();
 }
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+  node->block()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------
@@ -508,6 +517,7 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
+  ASSERT_UNSPEC;
   const auto &ids = node->identifiers();
   if (_in_function) {
     if (!node->is_auto()) {
@@ -518,7 +528,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       symbol->qualifier(node->qualifier());
       if(!_symtab.insert(symbol->name(), symbol))
         throw std::string("Redeclaration of local variable: ") + id;
-      _parent->set_new_symbol(symbol);
+      _parent->push_symbol(symbol);
 
       _offset += node->varType()->size();
       symbol->offset(-_offset);
@@ -527,7 +537,8 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         node->initializer()->accept(this, lvl + 2);
         check_variable_definition(node, symbol);
       }
-    } else {
+      node->type(node->varType());
+    } else { // auto dec
       auto tuple = (og::tuple_node*)node->initializer();
       tuple->accept(this, lvl + 2);
       if (ids->size() > 1) { // explode tuple
@@ -544,11 +555,11 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
           symbol->qualifier(node->qualifier());
           if(!_symtab.insert(symbol->name(), symbol))
             throw std::string("Redeclaration of local variable: ") + id;
-          _parent->set_new_symbol(symbol);
+          _parent->push_symbol(symbol);
           _offset += type->size();
           symbol->offset(-_offset);
         }
-      } else {
+      } else { // non-explosion
           std::string id = *ids->at(0);
           std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple)->type();
           std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(type, id);
@@ -556,10 +567,11 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
           symbol->qualifier(node->qualifier());
           if(!_symtab.insert(symbol->name(), symbol))
             throw std::string("Redeclaration of local variable: ") + id;
-          _parent->set_new_symbol(symbol);
+          _parent->push_symbol(symbol);
           _offset += type->size();
           symbol->offset(-_offset);
       }
+      node->type(tuple->type());
     }
   } else { // outside function
     if (!node->is_auto()) {
@@ -571,16 +583,17 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         symbol->global(true);
         symbol->qualifier(node->qualifier());
         _symtab.insert(symbol->name(), symbol);
-        _parent->set_new_symbol(symbol);
       } else {
         check_variable_declaration(node, symbol, node->varType());
       }
+      _parent->push_symbol(symbol);
 
       if (node->initializer()) {
         node->initializer()->accept(this, lvl + 2);
         check_variable_definition(node, symbol);
         symbol->defined(true);
       }
+      node->type(node->varType());
     } else { // auto dec
       auto tuple = (og::tuple_node*)node->initializer();
       tuple->accept(this, lvl + 2);
@@ -599,10 +612,10 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
             symbol->global(true);
             symbol->qualifier(node->qualifier());
             _symtab.insert(symbol->name(), symbol);
-            _parent->set_new_symbol(symbol);
           } else {
             check_variable_declaration(node, symbol, type);
           }
+          _parent->push_symbol(symbol);
 
           node->initializer()->accept(this, lvl + 2);
           check_variable_definition(node, symbol);
@@ -617,15 +630,16 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
             symbol->global(true);
             symbol->qualifier(node->qualifier());
             _symtab.insert(symbol->name(), symbol);
-            _parent->set_new_symbol(symbol);
           } else {
             check_variable_declaration(node, symbol, type);
           }
+          _parent->push_symbol(symbol);
 
           node->initializer()->accept(this, lvl + 2);
           check_variable_definition(node, symbol);
           symbol->defined(true);
       }
+      node->type(tuple->type());
     }
   }
 }

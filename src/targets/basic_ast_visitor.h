@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <queue>
 #include <cdk/compiler.h>
 #include <cdk/symbol_table.h>
 #include "targets/symbol.h"
@@ -26,8 +27,7 @@ protected:
 
 private:
 
-  // last symbol inserted in symbol table
-  std::vector<std::shared_ptr<og::symbol>> _new_symbols;
+  std::queue<std::shared_ptr<og::symbol>> _symbols;
 
 protected:
   basic_ast_visitor(std::shared_ptr<cdk::compiler> compiler) :
@@ -47,19 +47,16 @@ public:
   }
 
 public:
-  std::shared_ptr<og::symbol> new_symbol() {
-    return _new_symbols.empty() ? nullptr : _new_symbols[0];
-  }
-  std::vector<std::shared_ptr<og::symbol>>& new_symbols() {
-    return _new_symbols;
+  std::shared_ptr<og::symbol> pop_symbol() {
+    if (_symbols.empty()) return nullptr;
+
+    auto s = _symbols.front();
+    _symbols.pop();
+    return s;
   }
 
-  void set_new_symbol(std::shared_ptr<og::symbol> symbol) {
-    _new_symbols.push_back(symbol);
-  }
-
-  void reset_new_symbol() {
-    _new_symbols.clear();
+  void push_symbol(std::shared_ptr<og::symbol> symbol) {
+    _symbols.push(symbol);
   }
 
 public:
