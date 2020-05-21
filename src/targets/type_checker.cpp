@@ -556,7 +556,7 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
   const auto &ids = node->identifiers();
-  if (_in_function) {
+  if (_function) {
     if (!node->is_auto()) {
       std::string id = *ids->at(0);
 

@@ -65,7 +65,7 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
   for (size_t i = 0; i < node->size(); i++) {
     node->node(i)->accept(this, lvl);
   }
-  if (!_in_function) { // after all declarations
+  if (!_function) { // after all declarations
     // declare external functions
     for (std::string s: _functions_to_declare) {
       _pf.EXTERN(s);
@@ -589,10 +589,38 @@ void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
   /* TODO: IMPLEMENT */
-  _pf.GLOBAL("_main", _pf.FUNC());
-  _pf.LABEL("_main");
+  std::string id;
 
-  frame_size_calculator lsc(_compiler, _symtab);
+  if (node->identifier() == "og") {
+    id = "_main";
+  } else if (node->identifier() == "_main") {
+    id = "._main";
+  } else {
+    id = node->identifier();
+  }
+  _pf.GLOBAL(id, _pf.FUNC());
+  _pf.LABEL(id);
+
+  std::vector<std::shared_ptr<cdk::basic_type>> param_types;
+  cdk::sequence_node *parameters = node->parameters();
+  if (parameters != nullptr) {
+    for(size_t i = 0; i < parameters->size(); i++) {
+      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+    }
+  }
+
+  std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
+      node->type(),
+      id,
+      0,
+      node->qualifier(),
+      true,
+      true,
+      true,
+      param_types
+      );
+
+  frame_size_calculator lsc(_compiler);
   node->accept(&lsc, lvl);
   int local_size = lsc.localsize();
   if (local_size) {
@@ -601,11 +629,11 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
     _pf.START();
   }
 
-  _in_function = true;
+  _function = function;
 
   node->block()->accept(this, lvl+2);
 
-  _in_function = false;
+  _function = NULL;
   _offset = 0;
 
   _pf.LEAVE();
@@ -657,7 +685,7 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
 
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  if (_in_function) {
+  if (_function) {
     if (node->initializer()) {
       if (!node->is_auto()) {
         std::string id = new_symbol()->name();

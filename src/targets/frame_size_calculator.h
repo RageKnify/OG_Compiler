@@ -2,25 +2,22 @@
 #define __OG_TARGET_FRAME_SIZE_CALCULATOR_H__
 
 #include "targets/basic_ast_visitor.h"
-#include "targets/symbol.h"
-#include <cdk/symbol_table.h>
 
 namespace og {
 
 	class frame_size_calculator: public basic_ast_visitor {
-		cdk::symbol_table<og::symbol> &_symtab;
-
 		size_t _localsize;
+		size_t _max_tup;
 
 	public:
-		frame_size_calculator(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab) :
-			basic_ast_visitor(compiler), _symtab(symtab), _localsize(0) {
+		frame_size_calculator(std::shared_ptr<cdk::compiler> compiler) :
+			basic_ast_visitor(compiler), _localsize(0), _max_tup(0) {
 		}
 
 		~frame_size_calculator();
 
 		size_t localsize() const {
-			return _localsize;
+			return _localsize + _max_tup;
 		}
 
 	// do not edit these lines

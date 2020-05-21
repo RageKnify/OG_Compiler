@@ -22,7 +22,7 @@ protected:
   //! The owner compiler
   std::shared_ptr<cdk::compiler> _compiler;
 
-  bool _in_function;
+  std::shared_ptr<og::symbol> _function;
 
 private:
 
@@ -31,7 +31,7 @@ private:
 
 protected:
   basic_ast_visitor(std::shared_ptr<cdk::compiler> compiler) :
-      _compiler(compiler), _in_function(false) {
+      _compiler(compiler), _function(NULL) {
   }
 
   bool debug() {

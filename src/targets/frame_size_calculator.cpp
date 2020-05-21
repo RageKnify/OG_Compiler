@@ -1,6 +1,7 @@
 #include "targets/frame_size_calculator.h"
 #include "targets/symbol.h"
 #include "ast/all.h"
+#include <algorithm>
 
 og::frame_size_calculator::~frame_size_calculator() {
 	os().flush();
@@ -96,9 +97,6 @@ void og::frame_size_calculator::do_memory_reservation_node(og::memory_reservatio
 void og::frame_size_calculator::do_function_declaration_node(og::function_declaration_node * const node, int lvl) {
 	// EMPTY
 }
-void og::frame_size_calculator::do_function_call_node(og::function_call_node * const node, int lvl) {
-	// EMPTY
-}
 void og::frame_size_calculator::do_break_node(og::break_node * const node, int lvl) {
 	// EMPTY
 }
@@ -155,10 +153,12 @@ void og::frame_size_calculator::do_block_node(og::block_node * const node, int l
 }
 
 void og::frame_size_calculator::do_variable_declaration_node(og::variable_declaration_node * const node, int lvl) {
-	if (!node->is_auto()) {
-		_localsize += node->varType()->size();
-	} else {
-		/* TODO: tuples */
+	_localsize += node->varType()->size();
+}
+
+void og::frame_size_calculator::do_function_call_node(og::function_call_node * const node, int lvl) {
+	if (node->type()->name() == cdk::TYPE_STRUCT) {
+		_max_tup = std::max(node->type()->size(), _max_tup);
 	}
 }
 
