@@ -21,11 +21,14 @@ namespace og {
     std::set<std::string> _uninitialized_vars;
     int _offset;
     int _for_incr, _for_end;
+    std::shared_ptr<og::symbol> _function;
+    bool _in_args;
+    int _local_size;
 
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
-        basic_ast_visitor(compiler), _symtab(symtab), _pf(pf), _lbl(0), _offset(0), _for_incr(0), _for_end(0) {
+        basic_ast_visitor(compiler), _symtab(symtab), _pf(pf), _lbl(0), _offset(0), _for_incr(0), _for_end(0), _function(NULL), _in_args(0), _local_size(0) {
     }
 
   public:

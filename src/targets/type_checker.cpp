@@ -396,10 +396,13 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
 
 void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  node->block()->accept(this, lvl + 4);
 }
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  node->thenblock()->accept(this, lvl + 4);
+  node->elseblock()->accept(this, lvl + 4);
 }
 
 void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
@@ -431,12 +434,19 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
   }
 
   std::vector<std::shared_ptr<cdk::basic_type>> param_types;
+
+  _symtab.push(); // Don't polute the global scope
+  _in_args = true;
   cdk::sequence_node *parameters = node->parameters();
   if (parameters != nullptr) {
+    parameters->accept(this, lvl + 2);
     for(size_t i = 0; i < parameters->size(); i++) {
       param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+      _parent->pop_symbol();
     }
   }
+  _in_args = false;
+  _symtab.pop();
 
   std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
       node->type(),
@@ -451,17 +461,20 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
   std::shared_ptr<og::symbol> previous = _symtab.find(function->name());
 
   if (previous) {
-    if (previous->qualifier() == node->qualifier()) {
-      if (parameters != nullptr) {
+    if (function->params().size() == previous->params().size()) {
+      if (function->params().size()) {
         check_function_declaration(node, previous);
         for(size_t i = 0; i < parameters->size(); i++) {
-          if (!deep_type_check(((cdk::typed_node*)parameters->node(i))->type(), previous->params().at(i))) {
-            throw std::string("conflicting declaration for '" + function->name() + "'");
+          if (!deep_type_check(function->params().at(i), previous->params().at(i))) {
+            throw std::string("Conflicting declaration for '" + node->identifier() + "'");
           }
         }
       }
     } else {
-      throw std::string("conflicting declaration for '" + function->name() + "'");
+      std::ostringstream oss;
+      oss << "Function '" << node->identifier() << "' first declared with ";
+      oss << function->params().size() << " parameters then with " << previous->params().size();
+      throw oss.str();
     }
     _parent->push_symbol(nullptr);
   } else {
@@ -552,7 +565,94 @@ void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
 }
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+  std::string id;
+  if (node->identifier() == "og") {
+    id = "_main";
+  } else if (node->identifier() == "_main") {
+    id = "._main";
+  } else {
+    id = node->identifier();
+  }
+
+  std::vector<std::shared_ptr<cdk::basic_type>> param_types;
+  cdk::sequence_node *parameters = node->parameters();
+
+  std::shared_ptr<og::symbol> function = std::make_shared<og::symbol>(
+      node->type(),
+      id,
+      0,
+      node->qualifier(),
+      true,
+      true,
+      true,
+      param_types
+      );
+
+  std::shared_ptr<og::symbol> previous = _symtab.find(function->name());
+  if (previous) {
+    if (!previous->is_function()) {
+      std::ostringstream oss;
+      oss << "Redeclaration of variable '" << previous->name() << "' as function";
+      throw oss.str();
+    }
+    if (previous->defined()) {
+      std::ostringstream oss;
+      oss << "Redefinition of function '" << node->identifier() << "'";
+      throw oss.str();
+    }
+    if (!deep_type_check(previous->type(), node->type())) {
+      std::ostringstream oss;
+      oss << "Definition of function '" << previous->name() << "' with different type from declaration: ";
+      oss << cdk::to_string(previous->type()) << " and ";
+      oss << cdk::to_string(node->type());
+      throw oss.str();
+    }
+    if (previous->qualifier() != node->qualifier())
+    {
+      throw std::string("Definition of function with different qualifier from declaration");
+    }
+  }
+
+  if (previous) {
+    _symtab.replace(function->name(), function);
+  }
+  else {
+    _symtab.insert(function->name(), function);
+  }
+
+  _offset = 8;
+  _in_args = true;
+  _symtab.push();
+  if (node->parameters()) {
+    node->parameters()->accept(this, lvl + 2);
+    for(size_t i = 0; i < parameters->size(); i++) {
+      param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
+    }
+    function->params(param_types);
+  }
+  _in_args = false;
+
+  if (previous) {
+    if (function->params().size() == previous->params().size()) {
+      if (function->params().size()) {
+        for(size_t i = 0; i < parameters->size(); i++) {
+          if (!deep_type_check(function->params().at(i), previous->params().at(i))) {
+            throw std::string("Conflicting definition for '" + node->identifier() + "'");
+          }
+        }
+      }
+    } else {
+      std::ostringstream oss;
+      oss << "Function '" << node->identifier() << "' first declared with ";
+      oss << function->params().size() << " parameters then with " << previous->params().size();
+      throw oss.str();
+    }
+  }
+
+  _offset = 0;
+  _function = function;
   node->block()->accept(this, lvl + 2);
+  _symtab.pop();
 }
 
 //---------------------------------------------------------------------------
@@ -579,6 +679,69 @@ void og::type_checker::do_nullptr_node(og::nullptr_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
+  ASSERT_UNSPEC;
+
+  if (node->retval()) {
+    // return exprs;
+    node->retval()->accept(this, lvl + 2);
+    node->type(node->retval()->type());
+
+    if (node->type()->name() != cdk::TYPE_STRUCT) {
+      // non tuple return type
+      if (_function->type()->name() == cdk::TYPE_UNSPEC) {
+        _function->type(node->type());
+        return;
+      }
+      if (assignment_compatible(_function->type(), node->type())) {
+        // Do nothing
+      }
+      else if (assignment_compatible(node->type(), _function->type())) {
+        _function->type(node->type());
+      }
+      else {
+        throw "Incompatible types in return: " + cdk::to_string(node->type()) + " and " +
+          cdk::to_string(_function->type());
+      }
+    }
+    else {
+      // tuple return type
+      if (_function->type()->name() == cdk::TYPE_UNSPEC) {
+        _function->type(node->type());
+        return;
+      }
+      auto return_type = cdk::structured_type_cast(_function->type());
+      auto node_type = cdk::structured_type_cast(node->type());
+      if (return_type->length() != node_type->length()) {
+        throw "Incompatible types in return: " + cdk::to_string(node_type) + " and " +
+          cdk::to_string(return_type);
+      }
+      auto return_types = return_type->components();
+      auto node_types = node_type->components();
+      for (size_t i = 0; i < return_type->length(); ++i) {
+        auto inner_ret_type = return_types[i];
+        auto inner_node_type = node_types[i];
+        if (assignment_compatible(inner_ret_type, inner_node_type)) {
+          // Do nothing
+        }
+        else if (assignment_compatible(inner_node_type, inner_ret_type)) {
+          return_types[i] = inner_node_type;
+        }
+        else {
+          throw "Incompatible types in return: " + cdk::to_string(inner_node_type) + " and " +
+            cdk::to_string(inner_ret_type);
+        }
+      }
+    }
+  }
+  else {
+    node->type(cdk::make_primitive_type(0, cdk::TYPE_VOID));
+    if (_function->type()->name() == cdk::TYPE_UNSPEC) {
+      _function->type(node->type());
+    }
+    else if (_function->type()->name() != cdk::TYPE_VOID) {
+      throw std::string("Empty return for " + _function->name());
+    }
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -586,7 +749,7 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
   ASSERT_UNSPEC;
   const auto &ids = node->identifiers();
-  if (_in_function) {
+  if (_function || _in_args) {
     if (!node->is_auto()) {
       std::string id = *ids->at(0);
 
@@ -597,8 +760,14 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         throw std::string("Redeclaration of local variable: ") + id;
       _parent->push_symbol(symbol);
 
-      _offset += node->varType()->size();
-      symbol->offset(-_offset);
+      if (_in_args) {
+        symbol->offset(_offset);
+        _offset += node->varType()->size();
+      }
+      else {
+        _offset += node->varType()->size();
+        symbol->offset(-_offset);
+      }
 
       node->type(node->varType());
 
@@ -613,14 +782,14 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       auto tuple = (og::tuple_node*)node->initializer();
       tuple->accept(this, lvl + 2);
       if (ids->size() > 1) { // explode tuple
-        if (ids->size() != tuple->members()->size()) {
+        if (tuple->type()->name() != cdk::TYPE_STRUCT || ids->size() != cdk::structured_type_cast(tuple->type())->length()) {
           throw "Auto declaration with wrong number of elements: left " + std::to_string(ids->size()) +
-                ", right " + std::to_string(tuple->members()->size());
+                ", right " + (tuple->type()->name() == cdk::TYPE_STRUCT ? std::to_string(cdk::structured_type_cast(tuple->type())->length()) : "1");
         }
         for (size_t i = 0; i < ids->size(); i++) {
           std::string id = *ids->at(i);
 
-          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple->members()->node(i))->type();
+          std::shared_ptr<cdk::basic_type> type = cdk::structured_type_cast(tuple->type())->component(i);
           std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(type, id);
           symbol->global(false);
           symbol->qualifier(node->qualifier());
@@ -797,8 +966,7 @@ void og::type_checker::do_tuple_node(og::tuple_node* const node, int lvl) {
   ASSERT_UNSPEC;
   std::vector<std::shared_ptr<cdk::basic_type>> types;
   node->members()->accept(this, lvl + 2);
-  if (node->members()->size() == 1 &&
-      (((cdk::expression_node*)node->members()->node(0))->is_typed(cdk::TYPE_STRUCT))) { // avoid creating a nested unit tuple
+  if (node->members()->size() == 1) { // avoid creating unit tuple
     node->type(((cdk::expression_node*)node->members()->node(0))->type());
   } else {
     for (size_t i = 0; i < node->members()->size(); i++) {

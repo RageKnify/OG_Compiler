@@ -15,11 +15,14 @@ namespace og {
 
     int &_offset;
 
+    std::shared_ptr<og::symbol> &_function;
+
+    bool &_in_args;
+
   public:
     type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
-    basic_ast_visitor *parent, bool in_function, int &offset) :
-        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent), _offset(offset) {
-          _in_function = in_function;
+    basic_ast_visitor *parent, std::shared_ptr<og::symbol> &function, int &offset, bool &in_args) :
+        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent), _offset(offset), _function(function), _in_args(in_args) {
     }
 
   public:
@@ -70,9 +73,9 @@ namespace og {
 //     HELPER MACRO FOR TYPE CHECKING
 //---------------------------------------------------------------------------
 
-#define CHECK_TYPES(compiler, symtab, node, in_function, offset) { \
+#define CHECK_TYPES(compiler, symtab, node, function, offset, args) { \
   try { \
-    og::type_checker checker(compiler, symtab, this, in_function, offset); \
+    og::type_checker checker(compiler, symtab, this, function, offset, args); \
     (node)->accept(&checker, 0); \
   } \
   catch (const std::string &problem) { \
@@ -81,6 +84,6 @@ namespace og {
   } \
 }
 
-#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node, _in_function, _offset)
+#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node, _function, _offset, _in_args)
 
 #endif

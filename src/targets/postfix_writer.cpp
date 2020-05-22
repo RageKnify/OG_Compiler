@@ -65,10 +65,13 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
   for (size_t i = 0; i < node->size(); i++) {
     node->node(i)->accept(this, lvl);
   }
-  if (!_in_function) { // after all declarations
+  if (!_function) { // after all declarations
     // declare external functions
     for (std::string s: _functions_to_declare) {
-      _pf.EXTERN(s);
+      auto symbol = _symtab.find(s);
+	    if (!symbol || !symbol->defined()) {
+        _pf.EXTERN(s);
+      }
     }
 
     if (_uninitialized_vars.size() > 0) {
@@ -531,9 +534,7 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
   std::shared_ptr<og::symbol> function = pop_symbol();
   if (!function) return;
 
-  if (function->qualifier() == tREQUIRE) {
-    _functions_to_declare.insert(function->name());
-  }
+  _functions_to_declare.insert(function->name());
 }
 
 void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
@@ -566,10 +567,8 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     argsSize += param_type->size();
   }
   if (is_typed(node->type(), cdk::TYPE_STRUCT)) {
-    // TODO: need to send address where to write tuple
-    // int addr = ???;
-    // _pf.INT(addr);
-    // argsSize += 4;
+    _pf.LOCAL(-_local_size);
+    argsSize += 4;
   }
 
   _pf.CALL(function->name());
@@ -597,25 +596,36 @@ void og::postfix_writer::do_block_node(og::block_node *const node, int lvl) {
 }
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node *const node, int lvl) {
-  _in_function = true;
-  _offset = 0;
   ASSERT_SAFE_EXPRESSIONS;
-  /* TODO: IMPLEMENT */
-  _pf.GLOBAL("_main", _pf.FUNC());
-  _pf.LABEL("_main");
 
-  frame_size_calculator lsc(_compiler, _symtab);
+  if (_function->qualifier() == tPUBLIC) {
+    _pf.GLOBAL(_function->name(), _pf.FUNC());
+  }
+  _pf.LABEL(_function->name());
+
+  frame_size_calculator lsc(_compiler);
   node->accept(&lsc, lvl);
-  int local_size = lsc.localsize();
-  if (local_size) {
-    _pf.ENTER(local_size);
+  _local_size = lsc.localsize();
+  if (_local_size) {
+    _pf.ENTER(_local_size);
   } else {
     _pf.START();
   }
 
+  _symtab.push(); // args scope
+
+  _in_args = true;
+  if (node->parameters()) {
+    node->parameters()->accept(this, lvl + 2);
+  }
+  _in_args = false;
+
+
   node->block()->accept(this, lvl+2);
 
-  _in_function = false;
+  _symtab.pop();  // args scope
+
+  _function = nullptr;
   _offset = 0;
 
   _pf.LEAVE();
@@ -656,9 +666,60 @@ void og::postfix_writer::do_nullptr_node(og::nullptr_node* const node, int lvl) 
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
-  /* TODO: IMPLEMENT */
-  _pf.INT(0);
-  _pf.STFVAL32();
+  if (_function->type()->name() == cdk::TYPE_VOID) {
+    // Do nothing
+  }
+  else if (_function->type()->name() == cdk::TYPE_STRUCT) {
+    auto return_type = cdk::structured_type_cast(_function->type());
+    auto return_types = return_type->components();
+    auto tuple = node->retval();
+    // get pointer to tuple
+    _pf.LOCAL(8);
+    _pf.LDINT();
+    // duplicate address, 1 is used for offsets, 1 will be returned
+    _pf.DUP32();
+    for (size_t i = 0; i < tuple->members()->size(); ++i) {
+      // duplicate address, 1 is used to store this expr, 1 for next offsets
+      _pf.DUP32();
+      // evaluate expression
+      auto expr = (cdk::expression_node*)tuple->members()->node(i);
+      auto type = return_types[i];
+      // store the value
+      if (type->name() == cdk::TYPE_DOUBLE) {
+		_pf.DUP32(); // fodder for swap
+		expr->accept(this, lvl + 2);
+        if (expr->type()->name() != cdk::TYPE_DOUBLE) {
+          _pf.I2D();
+        }
+		_pf.SWAP64();
+		_pf.TRASH(4); // destroy fodder
+        _pf.STDOUBLE();
+      }
+      else{
+		expr->accept(this, lvl + 2);
+        _pf.SWAP32();
+        _pf.STINT();
+      }
+      // increment saved address by the size of type
+      _pf.INT(type->size());
+      _pf.ADD();
+    }
+    _pf.TRASH(4);
+    _pf.STFVAL32();
+  }
+  else if (_function->type()->name() == cdk::TYPE_DOUBLE) {
+    node->retval()->accept(this, lvl + 2);
+    auto tuple = node->retval();
+    auto expr = (cdk::expression_node*)tuple->members()->node(0);
+	if (expr->type()->name() != cdk::TYPE_DOUBLE) {
+	  _pf.I2D();
+	}
+    _pf.STFVAL64();
+  }
+  else {
+    node->retval()->accept(this, lvl + 2);
+    _pf.STFVAL32();
+  }
   _pf.LEAVE();
   _pf.RET();
 }
@@ -667,7 +728,16 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
 
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node* const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  if (_in_function) {
+  if (_in_args) {
+    auto sym = pop_symbol();
+
+    if (_function->type()->name() == cdk::TYPE_STRUCT)
+      sym->offset(sym->offset() + 4);
+
+    _symtab.insert(sym->name(), sym);
+    return;
+  }
+  if (_function) {
     if (node->initializer()) {
       if (!node->is_auto()) {
         auto sym = pop_symbol();
@@ -689,20 +759,48 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         const auto &ids = node->identifiers();
         auto tuple = (og::tuple_node*)node->initializer();
         if (ids->size() > 1) { // explode tuple
-          for (size_t i = 0; i < tuple->members()->size(); i++) {
-            auto sym = pop_symbol();
-            int offset = sym->offset();
-            _symtab.insert(sym->name(), sym);
-            auto expr = ((cdk::expression_node*)tuple->members()->node(i));
-            expr->accept(this, lvl + 2);
+          if (tuple->members()->size() == 1) { // func call
+            tuple->members()->node(0)->accept(this, lvl + 2); // call
+            int ret_offset = 0;
+            for (size_t i = 0; i < cdk::structured_type_cast(tuple->type())->length(); i++) {
+              auto sym = pop_symbol();
+              _symtab.insert(sym->name(), sym);
 
-            if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
-              _pf.LOCAL(offset);
-              _pf.STDOUBLE();
+              _pf.DUP32();
+              if (ret_offset) {
+                _pf.INT(ret_offset);
+                _pf.ADD();
+              }
+
+              if (is_typed(sym->type(), cdk::TYPE_DOUBLE)) {
+                _pf.LDDOUBLE();
+                _pf.LOCAL(sym->offset());
+                _pf.STDOUBLE();
+              } else {
+                _pf.LDINT();
+                _pf.LOCAL(sym->offset());
+                _pf.STINT();
+              }
+
+              ret_offset += sym->type()->size();
             }
-            else {
-              _pf.LOCAL(offset);
-              _pf.STINT();
+            _pf.TRASH(4); // remove extra copy of tuple address
+          } else { // list tuple
+            for (size_t i = 0; i < tuple->members()->size(); i++) {
+              auto sym = pop_symbol();
+              int offset = sym->offset();
+              _symtab.insert(sym->name(), sym);
+              auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+              expr->accept(this, lvl + 2);
+
+              if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+                _pf.LOCAL(offset);
+                _pf.STDOUBLE();
+              }
+              else {
+                _pf.LOCAL(offset);
+                _pf.STINT();
+              }
             }
           }
         } else { // non-explosion
@@ -714,9 +812,17 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
             expr->accept(this, lvl + 2);
 
             if (is_typed(expr->type(), cdk::TYPE_STRUCT)) {
-              /* TODO: Tuple function call */
-              /* Minor problem, since the tuple is the function's TYPE_STRUCT, this condition will never be true for `auto a = f()`*/
-              /* By allowing nested unit tuples, this should work */
+              for (size_t i = 0; i < expr->type()->size()/4; i++) {
+                _pf.DUP32();
+                if (i) {
+                  _pf.INT(i*4);
+                  _pf.ADD();
+                }
+                _pf.LDINT();
+                _pf.LOCAL(offset + i*4);
+                _pf.STINT();
+              }
+              _pf.TRASH(4);
             } else if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
               _pf.LOCAL(offset);
               _pf.STDOUBLE();
@@ -889,5 +995,7 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node* const node, i
 
 void og::postfix_writer::do_tuple_node(og::tuple_node* const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // empty
+  if (node->members()->size() == 1) {
+    node->members()->node(0)->accept(this, lvl + 2);
+  }
 }
