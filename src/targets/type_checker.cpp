@@ -373,6 +373,10 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
 
 void og::type_checker::do_print_node(og::print_node *const node, int lvl) {
   node->arguments()->accept(this, lvl + 2);
+  auto int_hint = cdk::make_primitive_type(4, cdk::TYPE_INT);
+  for (size_t i = 0; i < node->arguments()->size(); i++) {
+    hint_type(int_hint, (cdk::expression_node*)node->arguments()->node(i));
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -966,6 +970,12 @@ void og::type_checker::do_tuple_node(og::tuple_node* const node, int lvl) {
   ASSERT_UNSPEC;
   std::vector<std::shared_ptr<cdk::basic_type>> types;
   node->members()->accept(this, lvl + 2);
+
+  auto int_hint = cdk::make_primitive_type(4, cdk::TYPE_INT); // hint for input inside tuple
+  for (size_t i = 0; i < node->members()->size(); i++) {
+    hint_type(int_hint, (cdk::expression_node*)node->members()->node(i));
+  }
+
   if (node->members()->size() == 1) { // avoid creating unit tuple
     node->type(((cdk::expression_node*)node->members()->node(0))->type());
   } else {
