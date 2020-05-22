@@ -757,20 +757,49 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         const auto &ids = node->identifiers();
         auto tuple = (og::tuple_node*)node->initializer();
         if (ids->size() > 1) { // explode tuple
-          for (size_t i = 0; i < tuple->members()->size(); i++) {
-            auto sym = pop_symbol();
-            int offset = sym->offset();
-            _symtab.insert(sym->name(), sym);
-            auto expr = ((cdk::expression_node*)tuple->members()->node(i));
-            expr->accept(this, lvl + 2);
+          if (tuple->members()->size() == 1) { // func call
+            tuple->members()->node(0)->accept(this, lvl + 2); // call
+            int ret_offset = 0;
+            for (size_t i = 0; i < cdk::structured_type_cast(tuple->type())->length(); i++) {
+              auto sym = pop_symbol();
+              int offset = sym->offset();
+              _symtab.insert(sym->name(), sym);
 
-            if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
-              _pf.LOCAL(offset);
-              _pf.STDOUBLE();
+              _pf.DUP32();
+              if (ret_offset) {
+                _pf.INT(ret_offset);
+                _pf.ADD();
+              }
+
+              if (is_typed(sym->type(), cdk::TYPE_DOUBLE)) {
+                _pf.LDDOUBLE();
+                _pf.LOCAL(sym->offset());
+                _pf.STDOUBLE();
+              } else {
+                _pf.LDINT();
+                _pf.LOCAL(sym->offset());
+                _pf.STINT();
+              }
+
+              ret_offset += sym->type()->size();
             }
-            else {
-              _pf.LOCAL(offset);
-              _pf.STINT();
+            _pf.TRASH(4); // remove extra copy of tuple address
+          } else { // list tuple
+            for (size_t i = 0; i < tuple->members()->size(); i++) {
+              auto sym = pop_symbol();
+              int offset = sym->offset();
+              _symtab.insert(sym->name(), sym);
+              auto expr = ((cdk::expression_node*)tuple->members()->node(i));
+              expr->accept(this, lvl + 2);
+
+              if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
+                _pf.LOCAL(offset);
+                _pf.STDOUBLE();
+              }
+              else {
+                _pf.LOCAL(offset);
+                _pf.STINT();
+              }
             }
           }
         } else { // non-explosion
