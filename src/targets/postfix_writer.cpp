@@ -68,7 +68,10 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
   if (!_function) { // after all declarations
     // declare external functions
     for (std::string s: _functions_to_declare) {
-      _pf.EXTERN(s);
+      auto symbol = _symtab.find(s);
+	    if (!symbol || !symbol->defined()) {
+        _pf.EXTERN(s);
+      }
     }
 
     if (_uninitialized_vars.size() > 0) {
@@ -531,9 +534,7 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
   std::shared_ptr<og::symbol> function = pop_symbol();
   if (!function) return;
 
-  if (function->qualifier() == tREQUIRE) {
-    _functions_to_declare.insert(function->name());
-  }
+  _functions_to_declare.insert(function->name());
 }
 
 void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
