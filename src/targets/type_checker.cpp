@@ -396,10 +396,13 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
 
 void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  node->block()->accept(this, lvl + 4);
 }
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  node->thenblock()->accept(this, lvl + 4);
+  node->elseblock()->accept(this, lvl + 4);
 }
 
 void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
