@@ -106,9 +106,11 @@ void og::frame_size_calculator::do_read_node(og::read_node * const node, int lvl
 void og::frame_size_calculator::do_sizeof_node(og::sizeof_node * const node, int lvl) {
 	node->tuple()->accept(this, lvl + 2);
 }
+
 void og::frame_size_calculator::do_memory_reservation_node(og::memory_reservation_node * const node, int lvl) {
-	// EMPTY
+	node->argument()->accept(this, lvl + 2);
 }
+
 void og::frame_size_calculator::do_function_declaration_node(og::function_declaration_node * const node, int lvl) {
 	// EMPTY
 }
@@ -124,17 +126,24 @@ void og::frame_size_calculator::do_address_of_node(og::address_of_node * const n
 void og::frame_size_calculator::do_nullptr_node(og::nullptr_node * const node, int lvl) {
 	// EMPTY
 }
+
 void og::frame_size_calculator::do_return_node(og::return_node * const node, int lvl) {
-	// EMPTY
+	if (node->retval()) {
+		node->retval()->accept(this, lvl + 2);
+	}
 }
+
 void og::frame_size_calculator::do_pointer_index_node(og::pointer_index_node * const node, int lvl) {
-	// EMPTY
+	node->base()->accept(this, lvl + 2);
+	node->index()->accept(this, lvl + 2);
 }
+
 void og::frame_size_calculator::do_tuple_index_node(og::tuple_index_node * const node, int lvl) {
-	// EMPTY
+	node->tuple()->accept(this, lvl + 2);
 }
+
 void og::frame_size_calculator::do_tuple_node(og::tuple_node * const node, int lvl) {
-	// EMPTY
+	node->members()->accept(this, lvl + 2);
 }
 
 void og::frame_size_calculator::do_sequence_node(cdk::sequence_node * const node, int lvl) {
