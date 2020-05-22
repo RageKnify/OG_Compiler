@@ -347,6 +347,8 @@ void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) 
   } else if (is_typed(node->type(), cdk::TYPE_STRUCT)) {
     /* do nothing */
     /* but this prevents unit tuples from being indexed */
+  } else if (is_typed(node->type(), cdk::TYPE_VOID)) {
+    _pf.TRASH(4);
   } else {
     _pf.LDINT();
   }
@@ -517,7 +519,7 @@ void og::postfix_writer::do_memory_reservation_node(og::memory_reservation_node 
   auto reference_type = cdk::reference_type_cast(node->type());
   auto referenced_type = reference_type->referenced();
   if (is_typed(referenced_type, cdk::TYPE_UNSPEC)) {
-    throw std::string("Unspecified pointer type for memory reservation");
+    std::cerr << (node)->lineno() << ": " << "Unspecified pointer type for memory reservation" << std::endl; \
   }
   int size = referenced_type->size();
   if (size) {
