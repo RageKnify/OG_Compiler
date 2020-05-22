@@ -69,7 +69,7 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
     // declare external functions
     for (std::string s: _functions_to_declare) {
       auto symbol = _symtab.find(s);
-	    if (!symbol || !symbol->defined()) {
+        if (!symbol || !symbol->defined()) {
         _pf.EXTERN(s);
       }
     }
@@ -347,6 +347,8 @@ void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) 
   } else if (is_typed(node->type(), cdk::TYPE_STRUCT)) {
     /* do nothing */
     /* but this prevents unit tuples from being indexed */
+  } else if (is_typed(node->type(), cdk::TYPE_VOID)) {
+    _pf.TRASH(4);
   } else {
     _pf.LDINT();
   }
@@ -517,7 +519,7 @@ void og::postfix_writer::do_memory_reservation_node(og::memory_reservation_node 
   auto reference_type = cdk::reference_type_cast(node->type());
   auto referenced_type = reference_type->referenced();
   if (is_typed(referenced_type, cdk::TYPE_UNSPEC)) {
-    throw std::string("Unspecified pointer type for memory reservation");
+    std::cerr << (node)->lineno() << ": " << "Unspecified pointer type for memory reservation" << std::endl; \
   }
   int size = referenced_type->size();
   if (size) {
@@ -686,17 +688,17 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
       auto type = return_types[i];
       // store the value
       if (type->name() == cdk::TYPE_DOUBLE) {
-		_pf.DUP32(); // fodder for swap
-		expr->accept(this, lvl + 2);
+        _pf.DUP32(); // fodder for swap
+        expr->accept(this, lvl + 2);
         if (expr->type()->name() != cdk::TYPE_DOUBLE) {
           _pf.I2D();
         }
-		_pf.SWAP64();
-		_pf.TRASH(4); // destroy fodder
+        _pf.SWAP64();
+        _pf.TRASH(4); // destroy fodder
         _pf.STDOUBLE();
       }
       else{
-		expr->accept(this, lvl + 2);
+        expr->accept(this, lvl + 2);
         _pf.SWAP32();
         _pf.STINT();
       }
@@ -711,9 +713,9 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
     node->retval()->accept(this, lvl + 2);
     auto tuple = node->retval();
     auto expr = (cdk::expression_node*)tuple->members()->node(0);
-	if (expr->type()->name() != cdk::TYPE_DOUBLE) {
-	  _pf.I2D();
-	}
+    if (expr->type()->name() != cdk::TYPE_DOUBLE) {
+      _pf.I2D();
+    }
     _pf.STFVAL64();
   }
   else {
