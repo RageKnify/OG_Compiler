@@ -19,10 +19,12 @@ namespace og {
 
     bool &_in_args;
 
+    bool _last_inst;
+
   public:
     type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
     basic_ast_visitor *parent, std::shared_ptr<og::symbol> &function, int &offset, bool &in_args) :
-        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent), _offset(offset), _function(function), _in_args(in_args) {
+        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent), _offset(offset), _function(function), _in_args(in_args), _last_inst(false) {
     }
 
   public:
