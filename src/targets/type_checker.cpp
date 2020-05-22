@@ -441,6 +441,9 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
   std::string id;
 
   if (node->identifier() == "og") {
+    if (node->qualifier() != tPUBLIC) {
+      throw std::string("non `public` `og` function`");
+    }
     id = "_main";
   } else if (node->identifier() == "_main") {
     id = "._main";
@@ -584,6 +587,9 @@ void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
   std::string id;
   if (node->identifier() == "og") {
+    if (node->qualifier() != tPUBLIC) {
+      throw std::string("non `public` `og` function`");
+    }
     id = "_main";
   } else if (node->identifier() == "_main") {
     id = "._main";
