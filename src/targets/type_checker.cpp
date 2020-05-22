@@ -779,14 +779,14 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       auto tuple = (og::tuple_node*)node->initializer();
       tuple->accept(this, lvl + 2);
       if (ids->size() > 1) { // explode tuple
-        if (ids->size() != tuple->members()->size()) {
+        if (tuple->type()->name() != cdk::TYPE_STRUCT || ids->size() != cdk::structured_type_cast(tuple->type())->length()) {
           throw "Auto declaration with wrong number of elements: left " + std::to_string(ids->size()) +
-                ", right " + std::to_string(tuple->members()->size());
+                ", right " + (tuple->type()->name() == cdk::TYPE_STRUCT ? std::to_string(cdk::structured_type_cast(tuple->type())->length()) : "1");
         }
         for (size_t i = 0; i < ids->size(); i++) {
           std::string id = *ids->at(i);
 
-          std::shared_ptr<cdk::basic_type> type = ((cdk::expression_node*)tuple->members()->node(i))->type();
+          std::shared_ptr<cdk::basic_type> type = cdk::structured_type_cast(tuple->type())->component(i);
           std::shared_ptr<og::symbol> symbol = std::make_shared<og::symbol>(type, id);
           symbol->global(false);
           symbol->qualifier(node->qualifier());
