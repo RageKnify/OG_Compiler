@@ -393,6 +393,7 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   if (node->inits()) node->inits()->accept(this, lvl + 2);
   if (node->condition()) node->condition()->accept(this, lvl + 2);
   if (node->incrs()) node->incrs()->accept(this, lvl + 2);
+  node->block()->accept(this, lvl + 2);
   _symtab.pop();
 }
 
