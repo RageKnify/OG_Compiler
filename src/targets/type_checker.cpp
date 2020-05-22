@@ -73,6 +73,9 @@ void og::type_checker::hint_type(std::shared_ptr<cdk::basic_type> lt, cdk::typed
 
 void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl) {
   for (size_t i = 0; i < node->size(); ++i) {
+    if (_last_inst) {
+      throw std::string("Instruction beyond final instruction");
+    }
     node->node(i)->accept(this, lvl);
   }
 }
@@ -393,7 +396,9 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   if (node->inits()) node->inits()->accept(this, lvl + 2);
   if (node->condition()) node->condition()->accept(this, lvl + 2);
   if (node->incrs()) node->incrs()->accept(this, lvl + 2);
+  _last_inst = false;
   node->block()->accept(this, lvl + 2);
+  _last_inst = false;
   _symtab.pop();
 }
 
@@ -401,13 +406,18 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
 
 void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  _last_inst = false;
   node->block()->accept(this, lvl + 4);
+  _last_inst = false;
 }
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  _last_inst = false;
   node->thenblock()->accept(this, lvl + 4);
+  _last_inst = false;
   node->elseblock()->accept(this, lvl + 4);
+  _last_inst = false;
 }
 
 void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
@@ -565,7 +575,9 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
 void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
   _symtab.push();
   if (node->declarations()) node->declarations()->accept(this, lvl + 2);
+  _last_inst = false;
   if (node->instructions()) node->instructions()->accept(this, lvl + 2);
+  _last_inst = false;
   _symtab.pop();
 }
 
@@ -663,9 +675,11 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_break_node(og::break_node *const node, int lvl) {
+  _last_inst = true;
 }
 
 void og::type_checker::do_continue_node(og::continue_node * const node, int lvl) {
+  _last_inst = true;
 }
 
 //---------------------------------------------------------------------------
@@ -747,6 +761,7 @@ void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
       throw std::string("Empty return for " + _function->name());
     }
   }
+  _last_inst = true;
 }
 
 //---------------------------------------------------------------------------
