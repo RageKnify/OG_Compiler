@@ -69,7 +69,7 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
     // declare external functions
     for (std::string s: _functions_to_declare) {
       auto symbol = _symtab.find(s);
-	    if (!symbol || !symbol->defined()) {
+        if (!symbol || !symbol->defined()) {
         _pf.EXTERN(s);
       }
     }
@@ -686,17 +686,17 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
       auto type = return_types[i];
       // store the value
       if (type->name() == cdk::TYPE_DOUBLE) {
-		_pf.DUP32(); // fodder for swap
-		expr->accept(this, lvl + 2);
+        _pf.DUP32(); // fodder for swap
+        expr->accept(this, lvl + 2);
         if (expr->type()->name() != cdk::TYPE_DOUBLE) {
           _pf.I2D();
         }
-		_pf.SWAP64();
-		_pf.TRASH(4); // destroy fodder
+        _pf.SWAP64();
+        _pf.TRASH(4); // destroy fodder
         _pf.STDOUBLE();
       }
       else{
-		expr->accept(this, lvl + 2);
+        expr->accept(this, lvl + 2);
         _pf.SWAP32();
         _pf.STINT();
       }
@@ -711,9 +711,9 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
     node->retval()->accept(this, lvl + 2);
     auto tuple = node->retval();
     auto expr = (cdk::expression_node*)tuple->members()->node(0);
-	if (expr->type()->name() != cdk::TYPE_DOUBLE) {
-	  _pf.I2D();
-	}
+    if (expr->type()->name() != cdk::TYPE_DOUBLE) {
+      _pf.I2D();
+    }
     _pf.STFVAL64();
   }
   else {
