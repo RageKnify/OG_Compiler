@@ -566,10 +566,8 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     argsSize += param_type->size();
   }
   if (is_typed(node->type(), cdk::TYPE_STRUCT)) {
-    // TODO: need to send address where to write tuple
-    // int addr = ???;
-    // _pf.INT(addr);
-    // argsSize += 4;
+    _pf.LOCAL(-_local_size);
+    argsSize += 4;
   }
 
   _pf.CALL(function->name());
@@ -606,9 +604,9 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   frame_size_calculator lsc(_compiler);
   node->accept(&lsc, lvl);
-  int local_size = lsc.localsize();
-  if (local_size) {
-    _pf.ENTER(local_size);
+  _local_size = lsc.localsize();
+  if (_local_size) {
+    _pf.ENTER(_local_size);
   } else {
     _pf.START();
   }
@@ -671,10 +669,49 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
     // Do nothing
   }
   else if (_function->type()->name() == cdk::TYPE_STRUCT) {
-    // TODO: tuple return type
+    auto return_type = cdk::structured_type_cast(_function->type());
+    auto return_types = return_type->components();
+    auto tuple = node->retval();
+    // get pointer to tuple
+    _pf.LOCAL(8);
+    // duplicate address, 1 is used for offsets, 1 will be returned
+    _pf.DUP32();
+    for (size_t i = 0; i < tuple->members()->size(); ++i) {
+      // duplicate address, 1 is used to store this expr, 1 for next offsets
+      _pf.DUP32();
+      // evaluate expression
+      auto expr = (cdk::expression_node*)tuple->members()->node(i);
+      auto type = return_types[i];
+      // store the value
+      if (type->name() == cdk::TYPE_DOUBLE) {
+		_pf.DUP32(); // fodder for swap
+		expr->accept(this, lvl + 2);
+        if (expr->type()->name() != cdk::TYPE_DOUBLE) {
+          _pf.I2D();
+        }
+		_pf.SWAP64();
+		_pf.TRASH(4); // destroy fodder
+        _pf.STDOUBLE();
+      }
+      else{
+		expr->accept(this, lvl + 2);
+        _pf.SWAP32();
+        _pf.STINT();
+      }
+      // increment saved address by the size of type
+      _pf.INT(type->size());
+      _pf.ADD();
+    }
+    _pf.TRASH(4);
+    _pf.STFVAL32();
   }
   else if (_function->type()->name() == cdk::TYPE_DOUBLE) {
     node->retval()->accept(this, lvl + 2);
+    auto tuple = node->retval();
+    auto expr = (cdk::expression_node*)tuple->members()->node(0);
+	if (expr->type()->name() != cdk::TYPE_DOUBLE) {
+	  _pf.I2D();
+	}
     _pf.STFVAL64();
   }
   else {
