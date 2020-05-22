@@ -674,6 +674,7 @@ void og::postfix_writer::do_return_node(og::return_node* const node, int lvl) {
     auto tuple = node->retval();
     // get pointer to tuple
     _pf.LOCAL(8);
+    _pf.LDINT();
     // duplicate address, 1 is used for offsets, 1 will be returned
     _pf.DUP32();
     for (size_t i = 0; i < tuple->members()->size(); ++i) {
