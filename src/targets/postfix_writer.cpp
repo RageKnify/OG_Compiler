@@ -763,7 +763,6 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
             int ret_offset = 0;
             for (size_t i = 0; i < cdk::structured_type_cast(tuple->type())->length(); i++) {
               auto sym = pop_symbol();
-              int offset = sym->offset();
               _symtab.insert(sym->name(), sym);
 
               _pf.DUP32();
@@ -812,9 +811,17 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
             expr->accept(this, lvl + 2);
 
             if (is_typed(expr->type(), cdk::TYPE_STRUCT)) {
-              /* TODO: Tuple function call */
-              /* Minor problem, since the tuple is the function's TYPE_STRUCT, this condition will never be true for `auto a = f()`*/
-              /* By allowing nested unit tuples, this should work */
+              for (size_t i = 0; i < expr->type()->size()/4; i++) {
+                _pf.DUP32();
+                if (i) {
+                  _pf.INT(i*4);
+                  _pf.ADD();
+                }
+                _pf.LDINT();
+                _pf.LOCAL(offset + i*4);
+                _pf.STINT();
+              }
+              _pf.TRASH(4);
             } else if (is_typed(expr->type(), cdk::TYPE_DOUBLE)) {
               _pf.LOCAL(offset);
               _pf.STDOUBLE();
