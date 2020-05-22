@@ -178,6 +178,7 @@ void og::frame_size_calculator::do_block_node(og::block_node * const node, int l
 
 void og::frame_size_calculator::do_variable_declaration_node(og::variable_declaration_node * const node, int lvl) {
 	_localsize += node->type()->size();
+	if (node->initializer()) node->initializer()->accept(this, lvl + 2);
 }
 
 void og::frame_size_calculator::do_function_call_node(og::function_call_node * const node, int lvl) {
