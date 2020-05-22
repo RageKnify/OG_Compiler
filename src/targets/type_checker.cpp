@@ -71,13 +71,19 @@ void og::type_checker::hint_type(std::shared_ptr<cdk::basic_type> lt, cdk::typed
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl) {
+void og::type_checker::do_sequence_node(cdk::sequence_node *const node,
+                                        int lvl) {
+  int id = _id_count;
+  int child = 0;
   for (size_t i = 0; i < node->size(); ++i) {
     if (_last_inst) {
       throw std::string("Instruction beyond final instruction");
     }
+    child = ++_id_count;
     node->node(i)->accept(this, lvl);
   }
+
+  if (child) _children.insert({id, {child}});
 }
 
 //---------------------------------------------------------------------------
@@ -392,32 +398,46 @@ void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
+  int id = _id_count;
   _symtab.push();
   if (node->inits()) node->inits()->accept(this, lvl + 2);
   if (node->condition()) node->condition()->accept(this, lvl + 2);
   if (node->incrs()) node->incrs()->accept(this, lvl + 2);
   _last_inst = false;
+
+  int block_id = ++_id_count;
   node->block()->accept(this, lvl + 2);
   _last_inst = false;
   _symtab.pop();
+
+  _children.insert({id, {block_id}});
 }
 
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
+  int id = _id_count;
   node->condition()->accept(this, lvl + 4);
   _last_inst = false;
+  int block_id = ++_id_count;
   node->block()->accept(this, lvl + 4);
   _last_inst = false;
+
+  _children.insert({id, {block_id, -1}});
 }
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
+  int id = _id_count;
   node->condition()->accept(this, lvl + 4);
   _last_inst = false;
+  int then_id = ++_id_count;
   node->thenblock()->accept(this, lvl + 4);
   _last_inst = false;
+  int else_id = ++_id_count;
   node->elseblock()->accept(this, lvl + 4);
   _last_inst = false;
+
+  _children.insert({id, {then_id, else_id}});
 }
 
 void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
@@ -576,15 +596,26 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_block_node(og::block_node *const node, int lvl) {
+  int id = _id_count;
   _symtab.push();
-  if (node->declarations()) node->declarations()->accept(this, lvl + 2);
-  _last_inst = false;
-  if (node->instructions()) node->instructions()->accept(this, lvl + 2);
-  _last_inst = false;
+  if (node->declarations()) {
+    ++_id_count;
+    node->declarations()->accept(this, lvl + 2);
+  }
+  if (node->instructions()) {
+    int inst = ++_id_count;
+    _last_inst = false;
+    node->instructions()->accept(this, lvl + 2);
+    _children.insert({id, {inst}});
+    _last_inst = false;
+  }
   _symtab.pop();
 }
 
-void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+void og::type_checker::do_function_definition_node(
+    og::function_definition_node *const node, int lvl) {
+  _id_count = 0;
+
   std::string id;
   if (node->identifier() == "og") {
     if (node->qualifier() != tPUBLIC) {
@@ -647,6 +678,7 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   _in_args = true;
   _symtab.push();
   if (node->parameters()) {
+    ++_id_count;
     node->parameters()->accept(this, lvl + 2);
     for(size_t i = 0; i < parameters->size(); i++) {
       param_types.push_back(((cdk::typed_node*)parameters->node(i))->type());
@@ -674,8 +706,29 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
 
   _offset = 0;
   _function = function;
+  int block_id = ++_id_count;
   node->block()->accept(this, lvl + 2);
   _symtab.pop();
+  _children.insert({0, {block_id}});
+  if (_function->type()->name() != cdk::TYPE_VOID) verify_function_returns(0);
+}
+
+void og::type_checker::verify_function_returns(int id) {
+  auto search = _rets.find(id);
+  if (search != _rets.end()) return;
+
+  if (_children[id].size() == 0) {
+    // std::cout << "Bad node: " << _id_count << std::endl;
+    throw std::string("Function doesn't always return!");
+  } else if (_children[id].size() == 1) {
+    verify_function_returns(_children[id][0]);
+  } else if (_children[id].size() == 2) {
+    if (_children[id][1] == -1)
+      throw std::string("Function doesn't always return!");
+
+    verify_function_returns(_children[id][0]);
+    verify_function_returns(_children[id][1]);
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -704,6 +757,7 @@ void og::type_checker::do_nullptr_node(og::nullptr_node* const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_return_node(og::return_node* const node, int lvl) {
+  _rets.insert(_id_count++);
   ASSERT_UNSPEC;
 
   if (node->retval()) {

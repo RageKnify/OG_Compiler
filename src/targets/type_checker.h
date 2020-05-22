@@ -3,6 +3,8 @@
 
 #include "targets/basic_ast_visitor.h"
 
+#include <set>
+
 namespace og {
 
   /**
@@ -20,6 +22,10 @@ namespace og {
     bool &_in_args;
 
     bool _last_inst;
+    // Checking if function always returns
+    int _id_count;
+    std::map<int, std::vector<int>> _children;
+    std::set<int> _rets;
 
   public:
     type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
@@ -55,6 +61,8 @@ namespace og {
     void check_variable_definition(og::variable_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
     void check_function_declaration(og::function_declaration_node *const node, std::shared_ptr<og::symbol> symbol);
     void hint_type(std::shared_ptr<cdk::basic_type> lt, cdk::typed_node *const r);
+
+    void verify_function_returns(int id);
 
   public:
     // do not edit these lines
